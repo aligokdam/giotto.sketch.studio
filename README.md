@@ -1,0 +1,1 @@
+# giotto.sketch.studio
