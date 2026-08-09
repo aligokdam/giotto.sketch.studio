@@ -2,23 +2,25 @@
 
 Turn any photo into a live drawing reference directly in your browser.
 
-Giotto Sketch Studio is a client-side drawing assistant that lets artists upload an image, convert it into a clean sketch reference, and project it over the live camera feed. Align the overlay with your paper, adjust the transparency, and trace comfortably by hand — without sending your images to any server.
+Giotto Sketch Studio is an open-source drawing assistant that converts photographs into clean sketch references and projects them over your live camera feed — helping artists align, trace, and draw with confidence.
 
-Everything runs locally inside your browser.
+All processing happens locally in your browser. Your images are never uploaded or stored.
+
+🌐 **Live Demo Link :** https://aligokdam.github.io/giotto.sketch.studio/
 
 ---
 
 ## Features
 
-- Upload JPG, PNG, WEBP and HEIC images
-- Adjustable opacity
-- Edge detection & sketch filters
-- Brightness and sharpness controls
-- Live camera overlay
-- Drag, rotate and scale the reference image
-- Drawing Mode for tracing
-- Mobile and desktop friendly
-- Privacy-first — images never leave your device
+- 📤 Upload JPG, PNG, WEBP and HEIC images
+- 🎚️ Adjustable opacity
+- ✏️ Edge detection & sketch filters
+- 💡 Brightness and sharpness controls
+- 📷 Live camera overlay
+- 🔄 Drag, rotate and scale the reference image
+- 🖌️ Drawing Mode for tracing
+- 📱 Mobile and desktop friendly
+- 🔒 Privacy-first — images never leave your device
 
 ---
 
@@ -31,6 +33,16 @@ Everything runs locally inside your browser.
 5. Move, rotate and resize the overlay.
 6. Adjust opacity.
 7. Start drawing.
+
+---
+
+## Project Structure
+
+```text
+giotto.sketch.studio/
+├── index.html
+└── README.md
+```
 
 ---
 
@@ -51,22 +63,12 @@ For the best experience, use the latest version of your browser and allow camera
 
 Giotto Sketch Studio processes everything entirely on your device.
 
-- No images are uploaded.
-- No camera frames are stored.
-- No account required.
-- No cloud processing.
+- 🚫 No images are uploaded.
+- 🚫 No camera frames are stored.
+- 🚫 No account required.
+- 🚫 No cloud processing.
 
 Your photos remain yours.
-
----
-
-## Live Demo
-
-Try it instantly:
-
-https://aligokdam.github.io/giotto.sketch.studio/
-
-No installation required.
 
 ---
 
@@ -133,4 +135,8 @@ Everything runs entirely in the browser.
 
 ## License
 
-MIT
+MIT License
+
+---
+
+Created by **Ali Gökdam**
