@@ -115,16 +115,79 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible{
   position:absolute; top:18px; left:18px; right:18px; z-index:7;
   display:flex; align-items:center; justify-content:space-between;
 }
-.lang-pill{
-  display:flex; align-items:center; gap:2px; padding:4px; border-radius:999px;
-  background:var(--surface); border:1px solid var(--border);
+
+/* ============================= REUSABLE LANGUAGE SYSTEM (globe trigger + glass panel) =====
+   Portable across apps: copy this CSS block + the #langPanel markup + the LanguageSelector
+   class in <script>. Only TRANSLATIONS is app-specific. */
+.lang-panel{
+  position:fixed;
+  top:74px;
+  right:18px;
+  z-index:60;
+  width:min(280px, calc(100vw - 32px));
+  max-height:min(420px, calc(100vh - 110px));
+  background:
+    radial-gradient(circle at 100% 0%, rgba(176,123,255,.20), transparent 60%),
+    rgba(11,13,22,.94);
+  border:1px solid var(--border-strong);
+  border-radius:var(--radius-m);
+  box-shadow:var(--shadow-soft);
+  backdrop-filter:blur(24px) saturate(160%);
+  -webkit-backdrop-filter:blur(24px) saturate(160%);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+
+  opacity:0;
+  pointer-events:none;
+  transform:translateY(-8px) scale(.97);
+  transform-origin:top right;
+  transition:opacity .2s var(--ease), transform .2s var(--ease);
 }
-.lang-pill button{
-  border:none; background:transparent; color:var(--text-2); font-size:12px; font-weight:600;
-  letter-spacing:.03em; padding:7px 13px; border-radius:999px; cursor:pointer; transition:all .16s var(--ease);
+.lang-panel.show{
+  opacity:1;
+  pointer-events:auto;
+  transform:translateY(0) scale(1);
 }
-.lang-pill button.active{background:var(--grad); color:#0a0b12;}
-.lang-pill button:not(.active):hover{color:var(--text-0);}
+html[dir="rtl"] .lang-panel{ right:auto; left:18px; transform-origin:top left; }
+
+.lang-panel-header{
+  padding:12px 14px 10px;
+  font-family:var(--font-mono);
+  font-size:11px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.1em;
+  color:var(--text-2);
+  border-bottom:1px solid var(--border);
+  flex:none;
+}
+.lang-panel-list{
+  list-style:none; margin:0; padding:6px; overflow-y:auto; -webkit-overflow-scrolling:touch;
+}
+.lang-panel-list::-webkit-scrollbar{width:8px;}
+.lang-panel-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12); border-radius:999px;}
+
+.lang-option{
+  display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%;
+  text-align:left; background:transparent; border:1px solid transparent; color:var(--text-0);
+  font-size:14px; font-weight:500; padding:11px 12px; border-radius:var(--radius-s);
+  cursor:pointer; transition:background .15s var(--ease), border-color .15s var(--ease), color .15s var(--ease);
+}
+html[dir="rtl"] .lang-option{ text-align:right; }
+.lang-option:hover, .lang-option:focus-visible{ background:rgba(255,255,255,.07); }
+.lang-option[aria-selected="true"]{
+  background:var(--grad-soft); border-color:rgba(176,123,255,.4); color:var(--text-0);
+}
+.lang-option .lang-check{ width:15px; height:15px; flex:none; opacity:0; color:var(--blue); }
+.lang-option[aria-selected="true"] .lang-check{ opacity:1; }
+
+@media (max-width:480px){
+  .lang-panel{ top:68px; right:12px; left:12px; width:auto; max-height:min(56vh, 460px); }
+  html[dir="rtl"] .lang-panel{ left:12px; right:12px; }
+  .lang-option{ padding:13px 12px; font-size:15px; }
+}
+/* ============================= END LANGUAGE SYSTEM CSS ============================= */
 
 /* ============================= SCREEN 1: UPLOAD ============================= */
 #screen-upload{flex-direction:column; align-items:center; justify-content:center; padding:24px; gap:26px; overflow-y:auto;}
@@ -347,10 +410,15 @@ input[type=range]::-moz-range-thumb{
       <button class="icon-btn" id="btnGuide" aria-label="How it works">
         <svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
-      <div class="lang-pill" id="langPillUpload">
-        <button data-lang="en" class="active">EN</button>
-        <button data-lang="tr">TR</button>
-      </div>
+      <button class="icon-btn" id="langTriggerUpload" aria-haspopup="listbox" aria-expanded="false" aria-controls="langPanel" aria-label="Language">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/>
+          <ellipse cx="12" cy="12" rx="4" ry="9"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <path d="M4.6 7.5c1.9 1.1 4.6 1.8 7.4 1.8s5.5-.7 7.4-1.8" stroke-linecap="round"/>
+          <path d="M4.6 16.5c1.9-1.1 4.6-1.8 7.4-1.8s5.5.7 7.4 1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
     </div>
 
     <div class="brand">
@@ -393,6 +461,12 @@ input[type=range]::-moz-range-thumb{
     </div>
   </div>
 
+  <!-- ============ REUSABLE LANGUAGE PANEL (shared by every trigger) ============ -->
+  <div class="lang-panel" id="langPanel" role="listbox" aria-label="Language" aria-hidden="true">
+    <div class="lang-panel-header" data-i18n="langLabel">Language</div>
+    <ul class="lang-panel-list" id="langList"></ul>
+  </div>
+
   <!-- ============ SCREEN 2: EDITOR ============ -->
   <section id="screen-editor" class="screen">
     <div class="top-bar">
@@ -400,10 +474,15 @@ input[type=range]::-moz-range-thumb{
         <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <span class="title" data-i18n="adjustTitle">ADJUST REFERENCE</span>
-      <div class="lang-pill" id="langPillEditor">
-        <button data-lang="en" class="active">EN</button>
-        <button data-lang="tr">TR</button>
-      </div>
+      <button class="icon-btn" id="langTriggerEditor" aria-haspopup="listbox" aria-expanded="false" aria-controls="langPanel" aria-label="Language">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/>
+          <ellipse cx="12" cy="12" rx="4" ry="9"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <path d="M4.6 7.5c1.9 1.1 4.6 1.8 7.4 1.8s5.5-.7 7.4-1.8" stroke-linecap="round"/>
+          <path d="M4.6 16.5c1.9-1.1 4.6-1.8 7.4-1.8s5.5.7 7.4 1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
     </div>
 
     <div class="editor-canvas-wrap">
@@ -509,6 +588,353 @@ input[type=range]::-moz-range-thumb{
 </div>
 
 <script>
+"use strict";
+
+/* ==================================================================
+   REUSABLE LANGUAGE SYSTEM
+   ------------------------------------------------------------------
+   Everything from LANGUAGES down to "END REUSABLE LANGUAGE SYSTEM"
+   has no dependency on Giotto Sketch Studio and can be copy-pasted
+   into any other project sharing this dark-glassmorphism design
+   system. Only TRANSLATIONS further below is app-specific — swap it
+   for another app's own keys and everything else (24-language
+   config/ordering, RTL handling, persistence, keyboard nav, the
+   globe trigger(s) + shared panel) works unchanged.
+
+   Unlike a single fixed trigger, this controller supports MULTIPLE
+   trigger buttons sharing one panel (e.g. one globe icon per screen
+   in a single-page app) via registerTrigger().
+   ================================================================== */
+
+const LANGUAGES = [
+  {
+    "code": "en",
+    "name": "English",
+    "rtl": false,
+    "group": "latin"
+  },
+  {
+    "code": "fil",
+    "name": "Filipino",
+    "rtl": false,
+    "group": "latin"
+  },
+  {
+    "code": "fr",
+    "name": "Français",
+    "rtl": false,
+    "group": "latin"
+  },
+  {
+    "code": "de",
+    "name": "Deutsch",
+    "rtl": false,
+    "group": "latin"
+  },
+  {
+    "code": "ha",
+    "name": "Hausa",
+    "rtl": false,
+    "group": "latin"
+  },
+  {
+    "code": "id",
+    "name": "Bahasa Indonesia",
+    "rtl": false,
+    "group": "latin"
+  },
+  {
+    "code": "it",
+    "name": "Italiano",
+    "rtl": false,
+    "group": "latin"
+  },
+  {
+    "code": "pt",
+    "name": "Português",
+    "rtl": false,
+    "group": "latin"
+  },
+  {
+    "code": "es",
+    "name": "Español",
+    "rtl": false,
+    "group": "latin"
+  },
+  {
+    "code": "tr",
+    "name": "Türkçe",
+    "rtl": false,
+    "group": "latin"
+  },
+  {
+    "code": "vi",
+    "name": "Tiếng Việt",
+    "rtl": false,
+    "group": "latin"
+  },
+  {
+    "code": "ar",
+    "name": "العربية",
+    "rtl": true,
+    "group": "arabic"
+  },
+  {
+    "code": "fa",
+    "name": "فارسی",
+    "rtl": true,
+    "group": "arabic"
+  },
+  {
+    "code": "ur",
+    "name": "اردو",
+    "rtl": true,
+    "group": "arabic"
+  },
+  {
+    "code": "ru",
+    "name": "Русский",
+    "rtl": false,
+    "group": "cyrillic"
+  },
+  {
+    "code": "zh",
+    "name": "中文",
+    "rtl": false,
+    "group": "cjk"
+  },
+  {
+    "code": "ja",
+    "name": "日本語",
+    "rtl": false,
+    "group": "cjk"
+  },
+  {
+    "code": "ko",
+    "name": "한국어",
+    "rtl": false,
+    "group": "cjk"
+  },
+  {
+    "code": "hi",
+    "name": "हिन्दी",
+    "rtl": false,
+    "group": "devanagari"
+  },
+  {
+    "code": "mr",
+    "name": "मराठी",
+    "rtl": false,
+    "group": "devanagari"
+  },
+  {
+    "code": "bn",
+    "name": "বাংলা",
+    "rtl": false,
+    "group": "bengali"
+  },
+  {
+    "code": "pa",
+    "name": "ਪੰਜਾਬੀ",
+    "rtl": false,
+    "group": "gurmukhi"
+  },
+  {
+    "code": "ta",
+    "name": "தமிழ்",
+    "rtl": false,
+    "group": "tamil"
+  },
+  {
+    "code": "te",
+    "name": "తెలుగు",
+    "rtl": false,
+    "group": "telugu"
+  }
+];
+
+const LANG_STORAGE_KEY = "giotto-lang";
+
+class LanguageSelector {
+  constructor({ languages, translations, storageKey, defaultCode, onChange, panelId, listId, headerLabelKey }) {
+    this.languages = languages;
+    this.translations = translations;
+    this.storageKey = storageKey || "preferredLanguage";
+    this.defaultCode = defaultCode || "en";
+    this.onChange = onChange || (() => {});
+    this.headerLabelKey = headerLabelKey || "langLabel";
+
+    this.dom = {
+      panel: document.getElementById(panelId),
+      list: document.getElementById(listId),
+    };
+
+    this.triggers = [];       // every registered trigger button
+    this.activeTrigger = null; // trigger that most recently opened the panel
+    this.open = false;
+    this.current = this._loadSavedLanguage();
+    this._keydownHandler = null;
+    this._outsideClickHandler = null;
+
+    this._renderOptions();
+    this._applyLanguage(this.current, { persist: false, silent: true });
+  }
+
+  t(key) {
+    const dict = this.translations[this.current] || this.translations[this.defaultCode];
+    const fallback = this.translations[this.defaultCode] || {};
+    return (dict && dict[key] !== undefined) ? dict[key] : (fallback[key] !== undefined ? fallback[key] : key);
+  }
+
+  getCurrent() { return this.current; }
+
+  isRtl(code) {
+    const lang = this.languages.find((l) => l.code === code);
+    return !!(lang && lang.rtl);
+  }
+
+  /* Register any number of icon buttons that should open/toggle this
+     one shared panel. Each keeps its own aria-expanded state. */
+  registerTrigger(btnEl) {
+    if (!btnEl || this.triggers.includes(btnEl)) return;
+    this.triggers.push(btnEl);
+    btnEl.addEventListener("click", () => {
+      this.activeTrigger = btnEl;
+      this.toggle();
+    });
+    btnEl.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown" && !this.open) {
+        e.preventDefault();
+        this.activeTrigger = btnEl;
+        this.openPanel();
+      }
+    });
+  }
+
+  _loadSavedLanguage() {
+    try {
+      const saved = window.localStorage.getItem(this.storageKey);
+      if (saved && this.languages.some((l) => l.code === saved)) return saved;
+    } catch (err) {
+      console.warn("LanguageSelector \u2014 localStorage unavailable:", err);
+    }
+    return this.defaultCode;
+  }
+
+  _saveLanguage(code) {
+    try { window.localStorage.setItem(this.storageKey, code); }
+    catch (err) { console.warn("LanguageSelector \u2014 could not persist language:", err); }
+  }
+
+  _renderOptions() {
+    const { list } = this.dom;
+    while (list.firstChild) list.removeChild(list.firstChild);
+
+    this.languages.forEach((lang) => {
+      const li = document.createElement("li");
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "lang-option";
+      btn.setAttribute("role", "option");
+      btn.setAttribute("data-lang-code", lang.code);
+      btn.setAttribute("aria-selected", String(lang.code === this.current));
+      btn.setAttribute("lang", lang.code);
+
+      const label = document.createElement("span");
+      label.textContent = lang.name;
+
+      const check = document.createElement("span");
+      check.className = "lang-check";
+      check.setAttribute("aria-hidden", "true");
+      check.innerHTML =
+        '<svg viewBox="0 0 20 20" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+        '<path d="M4 10.5l3.5 3.5L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+        "</svg>";
+
+      btn.appendChild(label);
+      btn.appendChild(check);
+
+      btn.addEventListener("click", () => {
+        this._applyLanguage(lang.code, { persist: true, silent: false });
+        this.close();
+        if (this.activeTrigger) this.activeTrigger.focus();
+      });
+
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+
+    const header = this.dom.panel.querySelector("[data-i18n='" + this.headerLabelKey + "']");
+    if (header) header.textContent = this.t(this.headerLabelKey);
+  }
+
+  _applyLanguage(code, { persist, silent }) {
+    if (!this.languages.some((l) => l.code === code)) return;
+    this.current = code;
+
+    const rtl = this.isRtl(code);
+    document.documentElement.setAttribute("lang", code);
+    document.documentElement.setAttribute("dir", rtl ? "rtl" : "ltr");
+
+    this.dom.list.querySelectorAll(".lang-option").forEach((btn) => {
+      btn.setAttribute("aria-selected", String(btn.getAttribute("data-lang-code") === code));
+    });
+
+    if (persist) this._saveLanguage(code);
+    if (!silent) this.onChange(code);
+  }
+
+  openPanel() {
+    if (this.open) return;
+    this.open = true;
+    this.dom.panel.classList.add("show");
+    this.dom.panel.setAttribute("aria-hidden", "false");
+    this.triggers.forEach((btn) => btn.setAttribute("aria-expanded", String(btn === this.activeTrigger)));
+
+    const selected = this.dom.list.querySelector('.lang-option[aria-selected="true"]') || this.dom.list.querySelector(".lang-option");
+    if (selected) selected.focus();
+
+    this._outsideClickHandler = (e) => {
+      if (!this.dom.panel.contains(e.target) && !this.triggers.some((t) => t.contains(e.target))) this.close();
+    };
+    setTimeout(() => document.addEventListener("click", this._outsideClickHandler), 0);
+
+    this._keydownHandler = (e) => this._handlePanelKeydown(e);
+    document.addEventListener("keydown", this._keydownHandler);
+  }
+
+  close() {
+    if (!this.open) return;
+    this.open = false;
+    this.dom.panel.classList.remove("show");
+    this.dom.panel.setAttribute("aria-hidden", "true");
+    this.triggers.forEach((btn) => btn.setAttribute("aria-expanded", "false"));
+    if (this._outsideClickHandler) { document.removeEventListener("click", this._outsideClickHandler); this._outsideClickHandler = null; }
+    if (this._keydownHandler) { document.removeEventListener("keydown", this._keydownHandler); this._keydownHandler = null; }
+  }
+
+  toggle() { this.open ? this.close() : this.openPanel(); }
+
+  _handlePanelKeydown(e) {
+    const options = Array.from(this.dom.list.querySelectorAll(".lang-option"));
+    const currentIndex = options.findIndex((el) => el === document.activeElement);
+
+    if (e.key === "Escape") { e.preventDefault(); this.close(); if (this.activeTrigger) this.activeTrigger.focus(); return; }
+    if (e.key === "ArrowDown") { e.preventDefault(); (options[Math.min(options.length - 1, currentIndex + 1)] || options[0]).focus(); return; }
+    if (e.key === "ArrowUp") { e.preventDefault(); (options[Math.max(0, currentIndex - 1)] || options[0]).focus(); return; }
+    if ((e.key === "Enter" || e.key === " ") && document.activeElement && document.activeElement.classList.contains("lang-option")) {
+      e.preventDefault(); document.activeElement.click(); return;
+    }
+    if (e.key === "Tab") {
+      const first = options[0], last = options[options.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  }
+}
+/* ================= END REUSABLE LANGUAGE SYSTEM ================= */
+
+
 (function(){
   "use strict";
 
@@ -521,8 +947,7 @@ input[type=range]::-moz-range-thumb{
     overlay: { x:0, y:0, scale:1, rotation:0, flipH:1, flipV:1, locked:false },
     bakePending:false,
     stream:null,
-    fullscreenActive:false,
-    lang:"en"
+    fullscreenActive:false
   };
 
   const MAX_DIM = 1600;
@@ -530,71 +955,1173 @@ input[type=range]::-moz-range-thumb{
   const ACCEPTED = ["image/png","image/jpeg","image/jpg","image/webp","image/heic","image/heif"];
 
   /* ============================= I18N ============================= */
-  const I18N = {
-    en:{
-      tagline:"Reference tracing, through your camera",
-      dropTitle:"Drop your reference",
-      dropSub:"Click to browse, drag a file here, or paste an image",
-      chooseImage:"Choose Image",
-      dropHint:"PNG · JPG · WEBP · HEIC — up to 40MB",
-      adjustTitle:"ADJUST REFERENCE",
-      filterNormal:"Normal", filterGrayscale:"Grayscale", filterHighContrast:"High Contrast",
-      filterSketch:"Sketch", filterEdgeDetect:"Edge Detect", filterBlueprint:"Blueprint",
-      lblOpacity:"Opacity", lblBrightness:"Brightness", lblContrast:"Contrast",
-      lblSharpness:"Sharpness", lblEdge:"Edge Strength", lblSaturation:"Saturation", lblBlur:"Blur",
-      lblScale:"Scale", lblRotation:"Rotation",
-      reset:"Reset", openCamera:"Open Camera", startDrawing:"Start Drawing Mode",
-      transformLabel:"TRANSFORM",
-      hintHide:"hide", hintReset:"reset", hintFullscreen:"fullscreen", hintMove:"move", hintExit:"exit",
-      guideTitle:"How Giotto Sketch Studio Works",
-      guideSteps:[
-        "Upload a photo you want to use as a drawing reference.",
-        "Adjust it with filters and sliders — opacity, sharpness, edge strength and more.",
-        "Tap “Open Camera” to switch to your live camera feed.",
-        "The edited image appears as an overlay on top of the camera.",
-        "Place your paper underneath, in view of the camera.",
-        "Drag, pinch, or rotate the overlay until it lines up with your paper.",
-        "Fine-tune opacity, then tap “Start Drawing Mode” and trace by hand."
-      ],
-      errUnsupported:"Unsupported file type. Please use PNG, JPG, WEBP, or HEIC.",
-      errTooLarge:"File is too large. Maximum size is 40MB.",
-      errCantRead:"Couldn't read this image. If it's HEIC, try converting it to JPG first.",
-      errCamera:"Camera access denied or unavailable. Check your browser/site permissions.",
-      guidePrivacy:"Privacy: everything happens on your device. Your photo and camera feed are never uploaded to any server."
-    },
-    tr:{
-      tagline:"Kamerandan bakarak referans çizimi",
-      dropTitle:"Referansını sürükle",
-      dropSub:"Göz atmak için tıkla, dosya sürükle ya da bir görsel yapıştır",
-      chooseImage:"Görsel Seç",
-      dropHint:"PNG · JPG · WEBP · HEIC — 40MB'a kadar",
-      adjustTitle:"REFERANSI DÜZENLE",
-      filterNormal:"Normal", filterGrayscale:"Gri Ton", filterHighContrast:"Yüksek Kontrast",
-      filterSketch:"Eskiz", filterEdgeDetect:"Kenar Belirleme", filterBlueprint:"Teknik Çizim",
-      lblOpacity:"Saydamlık", lblBrightness:"Parlaklık", lblContrast:"Kontrast",
-      lblSharpness:"Keskinlik", lblEdge:"Kenar Gücü", lblSaturation:"Doygunluk", lblBlur:"Bulanıklık",
-      lblScale:"Ölçek", lblRotation:"Döndürme",
-      reset:"Sıfırla", openCamera:"Kamerayı Aç", startDrawing:"Çizim Modunu Başlat",
-      transformLabel:"DÖNÜŞÜM",
-      hintHide:"gizle", hintReset:"sıfırla", hintFullscreen:"tam ekran", hintMove:"taşı", hintExit:"çıkış",
-      guideTitle:"Giotto Sketch Studio Nasıl Çalışır",
-      guideSteps:[
-        "Çizim referansı olarak kullanmak istediğin bir fotoğraf yükle.",
-        "Filtreler ve kaydırıcılarla düzenle — saydamlık, keskinlik, kenar gücü ve daha fazlası.",
-        "Canlı kameraya geçmek için “Kamerayı Aç”a dokun.",
-        "Düzenlediğin görsel, kameranın üzerine yerleşir.",
-        "Kağıdını kameranın görüş alanına, altına yerleştir.",
-        "Görseli kağıdınla hizalanana kadar sürükle, sıkıştır ya da döndür.",
-        "Saydamlığı ayarla, ardından “Çizim Modunu Başlat”a dokunup elle çizmeye başla."
-      ],
-      errUnsupported:"Desteklenmeyen dosya türü. Lütfen PNG, JPG, WEBP veya HEIC kullanın.",
-      errTooLarge:"Dosya çok büyük. Maksimum boyut 40MB.",
-      errCantRead:"Bu görsel okunamadı. HEIC ise önce JPG'ye dönüştürmeyi dene.",
-      errCamera:"Kamera erişimi reddedildi veya kullanılamıyor. Tarayıcı/site izinlerini kontrol et.",
-      guidePrivacy:"Gizlilik: her şey cihazında gerçekleşir. Fotoğrafın ve kamera görüntün hiçbir sunucuya yüklenmez."
-    }
-  };
-  function t(key){ return (I18N[state.lang] && I18N[state.lang][key]) || I18N.en[key] || key; }
+  const TRANSLATIONS = {
+  "en": {
+    "tagline": "Reference tracing, through your camera",
+    "dropTitle": "Drop your reference",
+    "dropSub": "Click to browse, drag a file here, or paste an image",
+    "chooseImage": "Choose Image",
+    "dropHint": "PNG · JPG · WEBP · HEIC — up to 40MB",
+    "adjustTitle": "ADJUST REFERENCE",
+    "filterNormal": "Normal",
+    "filterGrayscale": "Grayscale",
+    "filterHighContrast": "High Contrast",
+    "filterSketch": "Sketch",
+    "filterEdgeDetect": "Edge Detect",
+    "filterBlueprint": "Blueprint",
+    "lblOpacity": "Opacity",
+    "lblBrightness": "Brightness",
+    "lblContrast": "Contrast",
+    "lblSharpness": "Sharpness",
+    "lblEdge": "Edge Strength",
+    "lblSaturation": "Saturation",
+    "lblBlur": "Blur",
+    "lblScale": "Scale",
+    "lblRotation": "Rotation",
+    "reset": "Reset",
+    "openCamera": "Open Camera",
+    "startDrawing": "Start Drawing Mode",
+    "transformLabel": "TRANSFORM",
+    "hintHide": "hide",
+    "hintReset": "reset",
+    "hintFullscreen": "fullscreen",
+    "hintMove": "move",
+    "hintExit": "exit",
+    "guideTitle": "How Giotto Sketch Studio Works",
+    "guideSteps": [
+      "Upload a photo you want to use as a drawing reference.",
+      "Adjust it with filters and sliders — opacity, sharpness, edge strength and more.",
+      "Tap “Open Camera” to switch to your live camera feed.",
+      "The edited image appears as an overlay on top of the camera.",
+      "Place your paper underneath, in view of the camera.",
+      "Drag, pinch, or rotate the overlay until it lines up with your paper.",
+      "Fine-tune opacity, then tap “Start Drawing Mode” and trace by hand."
+    ],
+    "errUnsupported": "Unsupported file type. Please use PNG, JPG, WEBP, or HEIC.",
+    "errTooLarge": "File is too large. Maximum size is 40MB.",
+    "errCantRead": "Couldn't read this image. If it's HEIC, try converting it to JPG first.",
+    "errCamera": "Camera access denied or unavailable. Check your browser/site permissions.",
+    "guidePrivacy": "Privacy: everything happens on your device. Your photo and camera feed are never uploaded to any server.",
+    "langLabel": "Language"
+  },
+  "tr": {
+    "tagline": "Kamerandan bakarak referans çizimi",
+    "dropTitle": "Referansını sürükle",
+    "dropSub": "Göz atmak için tıkla, dosya sürükle ya da bir görsel yapıştır",
+    "chooseImage": "Görsel Seç",
+    "dropHint": "PNG · JPG · WEBP · HEIC — 40MB'a kadar",
+    "adjustTitle": "REFERANSI DÜZENLE",
+    "filterNormal": "Normal",
+    "filterGrayscale": "Gri Ton",
+    "filterHighContrast": "Yüksek Kontrast",
+    "filterSketch": "Eskiz",
+    "filterEdgeDetect": "Kenar Belirleme",
+    "filterBlueprint": "Teknik Çizim",
+    "lblOpacity": "Saydamlık",
+    "lblBrightness": "Parlaklık",
+    "lblContrast": "Kontrast",
+    "lblSharpness": "Keskinlik",
+    "lblEdge": "Kenar Gücü",
+    "lblSaturation": "Doygunluk",
+    "lblBlur": "Bulanıklık",
+    "lblScale": "Ölçek",
+    "lblRotation": "Döndürme",
+    "reset": "Sıfırla",
+    "openCamera": "Kamerayı Aç",
+    "startDrawing": "Çizim Modunu Başlat",
+    "transformLabel": "DÖNÜŞÜM",
+    "hintHide": "gizle",
+    "hintReset": "sıfırla",
+    "hintFullscreen": "tam ekran",
+    "hintMove": "taşı",
+    "hintExit": "çıkış",
+    "guideTitle": "Giotto Sketch Studio Nasıl Çalışır",
+    "guideSteps": [
+      "Çizim referansı olarak kullanmak istediğin bir fotoğraf yükle.",
+      "Filtreler ve kaydırıcılarla düzenle — saydamlık, keskinlik, kenar gücü ve daha fazlası.",
+      "Canlı kameraya geçmek için “Kamerayı Aç”a dokun.",
+      "Düzenlediğin görsel, kameranın üzerine yerleşir.",
+      "Kağıdını kameranın görüş alanına, altına yerleştir.",
+      "Görseli kağıdınla hizalanana kadar sürükle, sıkıştır ya da döndür.",
+      "Saydamlığı ayarla, ardından “Çizim Modunu Başlat”a dokunup elle çizmeye başla."
+    ],
+    "errUnsupported": "Desteklenmeyen dosya türü. Lütfen PNG, JPG, WEBP veya HEIC kullanın.",
+    "errTooLarge": "Dosya çok büyük. Maksimum boyut 40MB.",
+    "errCantRead": "Bu görsel okunamadı. HEIC ise önce JPG'ye dönüştürmeyi dene.",
+    "errCamera": "Kamera erişimi reddedildi veya kullanılamıyor. Tarayıcı/site izinlerini kontrol et.",
+    "guidePrivacy": "Gizlilik: her şey cihazında gerçekleşir. Fotoğrafın ve kamera görüntün hiçbir sunucuya yüklenmez.",
+    "langLabel": "Dil"
+  },
+  "fil": {
+    "tagline": "Pagsubaybay sa reference, sa pamamagitan ng iyong camera",
+    "dropTitle": "I-drop ang iyong reference",
+    "dropSub": "I-click para mag-browse, i-drag ang file dito, o mag-paste ng larawan",
+    "chooseImage": "Pumili ng Larawan",
+    "dropHint": "PNG · JPG · WEBP · HEIC — hanggang 40MB",
+    "adjustTitle": "I-ADJUST ANG REFERENCE",
+    "filterNormal": "Normal",
+    "filterGrayscale": "Grayscale",
+    "filterHighContrast": "Mataas na Contrast",
+    "filterSketch": "Sketch",
+    "filterEdgeDetect": "Edge Detect",
+    "filterBlueprint": "Blueprint",
+    "lblOpacity": "Opacity",
+    "lblBrightness": "Liwanag",
+    "lblContrast": "Contrast",
+    "lblSharpness": "Sharpness",
+    "lblEdge": "Lakas ng Gilid",
+    "lblSaturation": "Saturation",
+    "lblBlur": "Blur",
+    "lblScale": "Sukat",
+    "lblRotation": "Pag-ikot",
+    "reset": "I-reset",
+    "openCamera": "Buksan ang Camera",
+    "startDrawing": "Simulan ang Drawing Mode",
+    "transformLabel": "TRANSFORM",
+    "hintHide": "itago",
+    "hintReset": "i-reset",
+    "hintFullscreen": "fullscreen",
+    "hintMove": "ilipat",
+    "hintExit": "lumabas",
+    "guideTitle": "Paano Gumagana ang Giotto Sketch Studio",
+    "guideSteps": [
+      "Mag-upload ng larawan na gusto mong gamiting drawing reference.",
+      "I-adjust gamit ang mga filter at slider — opacity, sharpness, lakas ng gilid, at higit pa.",
+      "Pindutin ang “Buksan ang Camera” para lumipat sa live camera feed.",
+      "Ang na-edit na larawan ay lalabas bilang overlay sa ibabaw ng camera.",
+      "Ilagay ang iyong papel sa ibaba, nasa saklaw ng camera.",
+      "I-drag, i-pinch, o i-ikot ang overlay hanggang tumapat ito sa iyong papel.",
+      "I-fine-tune ang opacity, pagkatapos pindutin ang “Simulan ang Drawing Mode” at gumuhit gamit ang kamay."
+    ],
+    "errUnsupported": "Hindi suportadong uri ng file. Gumamit ng PNG, JPG, WEBP, o HEIC.",
+    "errTooLarge": "Masyadong malaki ang file. Ang pinakamalaking sukat ay 40MB.",
+    "errCantRead": "Hindi mabasa ang larawang ito. Kung HEIC ito, subukan munang i-convert sa JPG.",
+    "errCamera": "Tinanggihan o hindi available ang access sa camera. Suriin ang mga pahintulot ng iyong browser/site.",
+    "guidePrivacy": "Privacy: nangyayari ang lahat sa iyong device. Ang iyong larawan at camera feed ay hindi kailanman ina-upload sa anumang server.",
+    "langLabel": "Wika"
+  },
+  "fr": {
+    "tagline": "Calque de référence, via votre caméra",
+    "dropTitle": "Déposez votre référence",
+    "dropSub": "Cliquez pour parcourir, glissez un fichier ici, ou collez une image",
+    "chooseImage": "Choisir une image",
+    "dropHint": "PNG · JPG · WEBP · HEIC — jusqu'à 40 Mo",
+    "adjustTitle": "AJUSTER LA RÉFÉRENCE",
+    "filterNormal": "Normal",
+    "filterGrayscale": "Niveaux de gris",
+    "filterHighContrast": "Contraste élevé",
+    "filterSketch": "Croquis",
+    "filterEdgeDetect": "Détection des contours",
+    "filterBlueprint": "Plan technique",
+    "lblOpacity": "Opacité",
+    "lblBrightness": "Luminosité",
+    "lblContrast": "Contraste",
+    "lblSharpness": "Netteté",
+    "lblEdge": "Intensité des contours",
+    "lblSaturation": "Saturation",
+    "lblBlur": "Flou",
+    "lblScale": "Échelle",
+    "lblRotation": "Rotation",
+    "reset": "Réinitialiser",
+    "openCamera": "Ouvrir la caméra",
+    "startDrawing": "Démarrer le mode dessin",
+    "transformLabel": "TRANSFORMATION",
+    "hintHide": "masquer",
+    "hintReset": "réinitialiser",
+    "hintFullscreen": "plein écran",
+    "hintMove": "déplacer",
+    "hintExit": "quitter",
+    "guideTitle": "Comment fonctionne Giotto Sketch Studio",
+    "guideSteps": [
+      "Téléchargez une photo que vous souhaitez utiliser comme référence de dessin.",
+      "Ajustez-la avec des filtres et curseurs — opacité, netteté, intensité des contours et plus.",
+      "Appuyez sur « Ouvrir la caméra » pour passer à votre flux caméra en direct.",
+      "L'image modifiée apparaît en superposition au-dessus de la caméra.",
+      "Placez votre papier en dessous, dans le champ de la caméra.",
+      "Faites glisser, pincez ou faites pivoter la superposition jusqu'à l'aligner avec votre papier.",
+      "Ajustez l'opacité, puis appuyez sur « Démarrer le mode dessin » et dessinez à la main."
+    ],
+    "errUnsupported": "Type de fichier non pris en charge. Utilisez PNG, JPG, WEBP ou HEIC.",
+    "errTooLarge": "Le fichier est trop volumineux. La taille maximale est de 40 Mo.",
+    "errCantRead": "Impossible de lire cette image. Si c'est un HEIC, essayez de le convertir en JPG d'abord.",
+    "errCamera": "Accès à la caméra refusé ou indisponible. Vérifiez les autorisations de votre navigateur/site.",
+    "guidePrivacy": "Confidentialité : tout se passe sur votre appareil. Votre photo et votre flux caméra ne sont jamais envoyés à un serveur.",
+    "langLabel": "Langue"
+  },
+  "de": {
+    "tagline": "Referenz-Durchpausen mit Ihrer Kamera",
+    "dropTitle": "Referenz hier ablegen",
+    "dropSub": "Klicken zum Durchsuchen, Datei hierher ziehen, oder ein Bild einfügen",
+    "chooseImage": "Bild auswählen",
+    "dropHint": "PNG · JPG · WEBP · HEIC — bis zu 40MB",
+    "adjustTitle": "REFERENZ ANPASSEN",
+    "filterNormal": "Normal",
+    "filterGrayscale": "Graustufen",
+    "filterHighContrast": "Hoher Kontrast",
+    "filterSketch": "Skizze",
+    "filterEdgeDetect": "Kantenerkennung",
+    "filterBlueprint": "Blaupause",
+    "lblOpacity": "Deckkraft",
+    "lblBrightness": "Helligkeit",
+    "lblContrast": "Kontrast",
+    "lblSharpness": "Schärfe",
+    "lblEdge": "Kantenstärke",
+    "lblSaturation": "Sättigung",
+    "lblBlur": "Unschärfe",
+    "lblScale": "Skalierung",
+    "lblRotation": "Drehung",
+    "reset": "Zurücksetzen",
+    "openCamera": "Kamera öffnen",
+    "startDrawing": "Zeichenmodus starten",
+    "transformLabel": "TRANSFORMATION",
+    "hintHide": "ausblenden",
+    "hintReset": "zurücksetzen",
+    "hintFullscreen": "Vollbild",
+    "hintMove": "verschieben",
+    "hintExit": "beenden",
+    "guideTitle": "So funktioniert Giotto Sketch Studio",
+    "guideSteps": [
+      "Laden Sie ein Foto hoch, das Sie als Zeichenvorlage verwenden möchten.",
+      "Passen Sie es mit Filtern und Reglern an — Deckkraft, Schärfe, Kantenstärke und mehr.",
+      "Tippen Sie auf „Kamera öffnen“, um zu Ihrem Live-Kamerabild zu wechseln.",
+      "Das bearbeitete Bild erscheint als Overlay über der Kamera.",
+      "Legen Sie Ihr Papier darunter, im Sichtfeld der Kamera.",
+      "Ziehen, kneifen oder drehen Sie das Overlay, bis es mit Ihrem Papier übereinstimmt.",
+      "Feinabstimmung der Deckkraft, dann auf „Zeichenmodus starten“ tippen und von Hand nachzeichnen."
+    ],
+    "errUnsupported": "Nicht unterstützter Dateityp. Bitte PNG, JPG, WEBP oder HEIC verwenden.",
+    "errTooLarge": "Datei ist zu groß. Maximale Größe ist 40MB.",
+    "errCantRead": "Dieses Bild konnte nicht gelesen werden. Bei HEIC zuerst in JPG konvertieren.",
+    "errCamera": "Kamerazugriff verweigert oder nicht verfügbar. Prüfen Sie die Browser-/Website-Berechtigungen.",
+    "guidePrivacy": "Datenschutz: Alles geschieht auf Ihrem Gerät. Ihr Foto und Kamerabild werden nie auf einen Server hochgeladen.",
+    "langLabel": "Sprache"
+  },
+  "ha": {
+    "tagline": "Bin diddigin tunani, ta hanyar kamararka",
+    "dropTitle": "Sauke tunaninka",
+    "dropSub": "Danna don bincika, ja fayil anan, ko liƙa hoto",
+    "chooseImage": "Zaɓi Hoto",
+    "dropHint": "PNG · JPG · WEBP · HEIC — har zuwa 40MB",
+    "adjustTitle": "DAIDAITA TUNANI",
+    "filterNormal": "Na yau da kullum",
+    "filterGrayscale": "Launin Toka",
+    "filterHighContrast": "Bambanci Mai Girma",
+    "filterSketch": "Zane",
+    "filterEdgeDetect": "Gano Gefe",
+    "filterBlueprint": "Blueprint",
+    "lblOpacity": "Bayyana",
+    "lblBrightness": "Haske",
+    "lblContrast": "Bambanci",
+    "lblSharpness": "Kaifi",
+    "lblEdge": "Karfin Gefe",
+    "lblSaturation": "Cikawar Launi",
+    "lblBlur": "Duhu",
+    "lblScale": "Girma",
+    "lblRotation": "Jujjuyawa",
+    "reset": "Sake Saitawa",
+    "openCamera": "Buɗe Kamara",
+    "startDrawing": "Fara Yanayin Zane",
+    "transformLabel": "CANJI",
+    "hintHide": "ɓoye",
+    "hintReset": "sake saita",
+    "hintFullscreen": "cikakken allo",
+    "hintMove": "motsa",
+    "hintExit": "fita",
+    "guideTitle": "Yadda Giotto Sketch Studio Ke Aiki",
+    "guideSteps": [
+      "Loda hoto da kake son amfani da shi azaman tunanin zane.",
+      "Daidaita shi da tacewa da sila — bayyana, kaifi, karfin gefe da sauransu.",
+      "Danna “Buɗe Kamara” don canzawa zuwa rayayyen bidiyon kamararka.",
+      "Hoton da aka gyara zai bayyana a saman kamara.",
+      "Sanya takardarka a ƙasa, cikin kallon kamara.",
+      "Ja, matse, ko juya rufin har sai ya daidaita da takardarka.",
+      "Daidaita bayyana, sannan danna “Fara Yanayin Zane” ka zana da hannu."
+    ],
+    "errUnsupported": "Nau'in fayil da ba a tallafawa. Da fatan za a yi amfani da PNG, JPG, WEBP, ko HEIC.",
+    "errTooLarge": "Fayil ɗin ya yi girma sosai. Iyakar girma shine 40MB.",
+    "errCantRead": "An kasa karanta wannan hoto. Idan HEIC ne, gwada mayar da shi zuwa JPG tukuna.",
+    "errCamera": "An hana samun kamara ko ba ta samuwa. Duba izinin burauza/shafi.",
+    "guidePrivacy": "Sirri: komai yana faruwa a na'urarka. Hoton ka da bidiyon kamararka ba a taɓa loda su zuwa kowane sabar ba.",
+    "langLabel": "Harshe"
+  },
+  "id": {
+    "tagline": "Pelacakan referensi, melalui kamera Anda",
+    "dropTitle": "Jatuhkan referensi Anda",
+    "dropSub": "Klik untuk menelusuri, seret file ke sini, atau tempel gambar",
+    "chooseImage": "Pilih Gambar",
+    "dropHint": "PNG · JPG · WEBP · HEIC — hingga 40MB",
+    "adjustTitle": "SESUAIKAN REFERENSI",
+    "filterNormal": "Normal",
+    "filterGrayscale": "Skala Abu-abu",
+    "filterHighContrast": "Kontras Tinggi",
+    "filterSketch": "Sketsa",
+    "filterEdgeDetect": "Deteksi Tepi",
+    "filterBlueprint": "Cetak Biru",
+    "lblOpacity": "Opasitas",
+    "lblBrightness": "Kecerahan",
+    "lblContrast": "Kontras",
+    "lblSharpness": "Ketajaman",
+    "lblEdge": "Kekuatan Tepi",
+    "lblSaturation": "Saturasi",
+    "lblBlur": "Blur",
+    "lblScale": "Skala",
+    "lblRotation": "Rotasi",
+    "reset": "Atur Ulang",
+    "openCamera": "Buka Kamera",
+    "startDrawing": "Mulai Mode Menggambar",
+    "transformLabel": "TRANSFORMASI",
+    "hintHide": "sembunyikan",
+    "hintReset": "atur ulang",
+    "hintFullscreen": "layar penuh",
+    "hintMove": "pindah",
+    "hintExit": "keluar",
+    "guideTitle": "Cara Kerja Giotto Sketch Studio",
+    "guideSteps": [
+      "Unggah foto yang ingin Anda gunakan sebagai referensi gambar.",
+      "Sesuaikan dengan filter dan penggeser — opasitas, ketajaman, kekuatan tepi, dan lainnya.",
+      "Ketuk “Buka Kamera” untuk beralih ke umpan kamera langsung Anda.",
+      "Gambar yang diedit muncul sebagai overlay di atas kamera.",
+      "Letakkan kertas Anda di bawahnya, dalam jangkauan kamera.",
+      "Seret, cubit, atau putar overlay hingga sejajar dengan kertas Anda.",
+      "Sempurnakan opasitas, lalu ketuk “Mulai Mode Menggambar” dan telusuri dengan tangan."
+    ],
+    "errUnsupported": "Jenis file tidak didukung. Gunakan PNG, JPG, WEBP, atau HEIC.",
+    "errTooLarge": "File terlalu besar. Ukuran maksimum adalah 40MB.",
+    "errCantRead": "Tidak dapat membaca gambar ini. Jika HEIC, coba konversi ke JPG terlebih dahulu.",
+    "errCamera": "Akses kamera ditolak atau tidak tersedia. Periksa izin browser/situs Anda.",
+    "guidePrivacy": "Privasi: semuanya terjadi di perangkat Anda. Foto dan umpan kamera Anda tidak pernah diunggah ke server mana pun.",
+    "langLabel": "Bahasa"
+  },
+  "it": {
+    "tagline": "Ricalco di riferimento, tramite la tua fotocamera",
+    "dropTitle": "Trascina il tuo riferimento",
+    "dropSub": "Clicca per sfogliare, trascina un file qui, o incolla un'immagine",
+    "chooseImage": "Scegli Immagine",
+    "dropHint": "PNG · JPG · WEBP · HEIC — fino a 40MB",
+    "adjustTitle": "REGOLA RIFERIMENTO",
+    "filterNormal": "Normale",
+    "filterGrayscale": "Scala di grigi",
+    "filterHighContrast": "Contrasto elevato",
+    "filterSketch": "Schizzo",
+    "filterEdgeDetect": "Rilevamento bordi",
+    "filterBlueprint": "Progetto tecnico",
+    "lblOpacity": "Opacità",
+    "lblBrightness": "Luminosità",
+    "lblContrast": "Contrasto",
+    "lblSharpness": "Nitidezza",
+    "lblEdge": "Intensità bordi",
+    "lblSaturation": "Saturazione",
+    "lblBlur": "Sfocatura",
+    "lblScale": "Scala",
+    "lblRotation": "Rotazione",
+    "reset": "Reimposta",
+    "openCamera": "Apri Fotocamera",
+    "startDrawing": "Avvia Modalità Disegno",
+    "transformLabel": "TRASFORMAZIONE",
+    "hintHide": "nascondi",
+    "hintReset": "reimposta",
+    "hintFullscreen": "schermo intero",
+    "hintMove": "sposta",
+    "hintExit": "esci",
+    "guideTitle": "Come Funziona Giotto Sketch Studio",
+    "guideSteps": [
+      "Carica una foto che vuoi usare come riferimento per il disegno.",
+      "Regolala con filtri e cursori — opacità, nitidezza, intensità dei bordi e altro.",
+      "Tocca “Apri Fotocamera” per passare al flusso live della fotocamera.",
+      "L'immagine modificata appare come sovrapposizione sopra la fotocamera.",
+      "Posiziona il tuo foglio sotto, nell'inquadratura della fotocamera.",
+      "Trascina, pizzica o ruota la sovrapposizione finché non si allinea con il tuo foglio.",
+      "Regola con precisione l'opacità, poi tocca “Avvia Modalità Disegno” e ricalca a mano."
+    ],
+    "errUnsupported": "Tipo di file non supportato. Usa PNG, JPG, WEBP o HEIC.",
+    "errTooLarge": "Il file è troppo grande. La dimensione massima è 40MB.",
+    "errCantRead": "Impossibile leggere questa immagine. Se è HEIC, prova prima a convertirla in JPG.",
+    "errCamera": "Accesso alla fotocamera negato o non disponibile. Controlla i permessi del browser/sito.",
+    "guidePrivacy": "Privacy: tutto avviene sul tuo dispositivo. La tua foto e il flusso della fotocamera non vengono mai caricati su alcun server.",
+    "langLabel": "Lingua"
+  },
+  "pt": {
+    "tagline": "Decalque de referência, pela sua câmera",
+    "dropTitle": "Solte sua referência",
+    "dropSub": "Clique para procurar, arraste um arquivo aqui, ou cole uma imagem",
+    "chooseImage": "Escolher Imagem",
+    "dropHint": "PNG · JPG · WEBP · HEIC — até 40MB",
+    "adjustTitle": "AJUSTAR REFERÊNCIA",
+    "filterNormal": "Normal",
+    "filterGrayscale": "Escala de Cinza",
+    "filterHighContrast": "Alto Contraste",
+    "filterSketch": "Esboço",
+    "filterEdgeDetect": "Detecção de Bordas",
+    "filterBlueprint": "Projeto Técnico",
+    "lblOpacity": "Opacidade",
+    "lblBrightness": "Brilho",
+    "lblContrast": "Contraste",
+    "lblSharpness": "Nitidez",
+    "lblEdge": "Intensidade da Borda",
+    "lblSaturation": "Saturação",
+    "lblBlur": "Desfoque",
+    "lblScale": "Escala",
+    "lblRotation": "Rotação",
+    "reset": "Redefinir",
+    "openCamera": "Abrir Câmera",
+    "startDrawing": "Iniciar Modo de Desenho",
+    "transformLabel": "TRANSFORMAÇÃO",
+    "hintHide": "ocultar",
+    "hintReset": "redefinir",
+    "hintFullscreen": "tela cheia",
+    "hintMove": "mover",
+    "hintExit": "sair",
+    "guideTitle": "Como Funciona o Giotto Sketch Studio",
+    "guideSteps": [
+      "Envie uma foto que você deseja usar como referência de desenho.",
+      "Ajuste com filtros e controles deslizantes — opacidade, nitidez, intensidade da borda e mais.",
+      "Toque em “Abrir Câmera” para mudar para o feed da câmera ao vivo.",
+      "A imagem editada aparece como uma sobreposição sobre a câmera.",
+      "Coloque seu papel embaixo, no campo de visão da câmera.",
+      "Arraste, belisque ou gire a sobreposição até alinhá-la com seu papel.",
+      "Ajuste a opacidade, depois toque em “Iniciar Modo de Desenho” e trace à mão."
+    ],
+    "errUnsupported": "Tipo de arquivo não suportado. Use PNG, JPG, WEBP ou HEIC.",
+    "errTooLarge": "Arquivo muito grande. O tamanho máximo é 40MB.",
+    "errCantRead": "Não foi possível ler esta imagem. Se for HEIC, tente convertê-la para JPG primeiro.",
+    "errCamera": "Acesso à câmera negado ou indisponível. Verifique as permissões do navegador/site.",
+    "guidePrivacy": "Privacidade: tudo acontece no seu dispositivo. Sua foto e o feed da câmera nunca são enviados a nenhum servidor.",
+    "langLabel": "Idioma"
+  },
+  "es": {
+    "tagline": "Calcado de referencia, a través de tu cámara",
+    "dropTitle": "Suelta tu referencia",
+    "dropSub": "Haz clic para explorar, arrastra un archivo aquí, o pega una imagen",
+    "chooseImage": "Elegir Imagen",
+    "dropHint": "PNG · JPG · WEBP · HEIC — hasta 40MB",
+    "adjustTitle": "AJUSTAR REFERENCIA",
+    "filterNormal": "Normal",
+    "filterGrayscale": "Escala de Grises",
+    "filterHighContrast": "Alto Contraste",
+    "filterSketch": "Boceto",
+    "filterEdgeDetect": "Detección de Bordes",
+    "filterBlueprint": "Plano Técnico",
+    "lblOpacity": "Opacidad",
+    "lblBrightness": "Brillo",
+    "lblContrast": "Contraste",
+    "lblSharpness": "Nitidez",
+    "lblEdge": "Intensidad de Bordes",
+    "lblSaturation": "Saturación",
+    "lblBlur": "Desenfoque",
+    "lblScale": "Escala",
+    "lblRotation": "Rotación",
+    "reset": "Restablecer",
+    "openCamera": "Abrir Cámara",
+    "startDrawing": "Iniciar Modo Dibujo",
+    "transformLabel": "TRANSFORMACIÓN",
+    "hintHide": "ocultar",
+    "hintReset": "restablecer",
+    "hintFullscreen": "pantalla completa",
+    "hintMove": "mover",
+    "hintExit": "salir",
+    "guideTitle": "Cómo Funciona Giotto Sketch Studio",
+    "guideSteps": [
+      "Sube una foto que quieras usar como referencia de dibujo.",
+      "Ajústala con filtros y controles deslizantes — opacidad, nitidez, intensidad de bordes y más.",
+      "Toca “Abrir Cámara” para cambiar a la vista de tu cámara en vivo.",
+      "La imagen editada aparece como una superposición sobre la cámara.",
+      "Coloca tu papel debajo, dentro del campo de visión de la cámara.",
+      "Arrastra, pellizca o rota la superposición hasta alinearla con tu papel.",
+      "Ajusta la opacidad, luego toca “Iniciar Modo Dibujo” y calca a mano."
+    ],
+    "errUnsupported": "Tipo de archivo no compatible. Usa PNG, JPG, WEBP o HEIC.",
+    "errTooLarge": "El archivo es demasiado grande. El tamaño máximo es 40MB.",
+    "errCantRead": "No se pudo leer esta imagen. Si es HEIC, intenta convertirla a JPG primero.",
+    "errCamera": "Acceso a la cámara denegado o no disponible. Revisa los permisos de tu navegador/sitio.",
+    "guidePrivacy": "Privacidad: todo ocurre en tu dispositivo. Tu foto y la transmisión de la cámara nunca se suben a ningún servidor.",
+    "langLabel": "Idioma"
+  },
+  "vi": {
+    "tagline": "Đồ lại tham chiếu, qua camera của bạn",
+    "dropTitle": "Thả ảnh tham chiếu của bạn",
+    "dropSub": "Nhấp để duyệt, kéo tệp vào đây, hoặc dán một hình ảnh",
+    "chooseImage": "Chọn Hình Ảnh",
+    "dropHint": "PNG · JPG · WEBP · HEIC — tối đa 40MB",
+    "adjustTitle": "ĐIỀU CHỈNH THAM CHIẾU",
+    "filterNormal": "Bình thường",
+    "filterGrayscale": "Thang xám",
+    "filterHighContrast": "Tương phản cao",
+    "filterSketch": "Phác thảo",
+    "filterEdgeDetect": "Phát hiện cạnh",
+    "filterBlueprint": "Bản vẽ kỹ thuật",
+    "lblOpacity": "Độ mờ",
+    "lblBrightness": "Độ sáng",
+    "lblContrast": "Tương phản",
+    "lblSharpness": "Độ sắc nét",
+    "lblEdge": "Cường độ cạnh",
+    "lblSaturation": "Độ bão hòa",
+    "lblBlur": "Làm mờ",
+    "lblScale": "Tỷ lệ",
+    "lblRotation": "Xoay",
+    "reset": "Đặt lại",
+    "openCamera": "Mở Camera",
+    "startDrawing": "Bắt Đầu Chế Độ Vẽ",
+    "transformLabel": "BIẾN ĐỔI",
+    "hintHide": "ẩn",
+    "hintReset": "đặt lại",
+    "hintFullscreen": "toàn màn hình",
+    "hintMove": "di chuyển",
+    "hintExit": "thoát",
+    "guideTitle": "Giotto Sketch Studio Hoạt Động Như Thế Nào",
+    "guideSteps": [
+      "Tải lên một bức ảnh bạn muốn dùng làm tham chiếu vẽ.",
+      "Điều chỉnh bằng bộ lọc và thanh trượt — độ mờ, độ sắc nét, cường độ cạnh và hơn thế nữa.",
+      "Chạm “Mở Camera” để chuyển sang nguồn camera trực tiếp.",
+      "Hình ảnh đã chỉnh sửa xuất hiện dưới dạng lớp phủ trên camera.",
+      "Đặt giấy của bạn bên dưới, trong tầm nhìn của camera.",
+      "Kéo, chụm, hoặc xoay lớp phủ cho đến khi nó khớp với giấy của bạn.",
+      "Tinh chỉnh độ mờ, sau đó chạm “Bắt Đầu Chế Độ Vẽ” và đồ lại bằng tay."
+    ],
+    "errUnsupported": "Loại tệp không được hỗ trợ. Vui lòng dùng PNG, JPG, WEBP, hoặc HEIC.",
+    "errTooLarge": "Tệp quá lớn. Kích thước tối đa là 40MB.",
+    "errCantRead": "Không thể đọc hình ảnh này. Nếu là HEIC, hãy thử chuyển sang JPG trước.",
+    "errCamera": "Quyền truy cập camera bị từ chối hoặc không khả dụng. Kiểm tra quyền của trình duyệt/trang web.",
+    "guidePrivacy": "Quyền riêng tư: mọi thứ diễn ra trên thiết bị của bạn. Ảnh và nguồn camera của bạn không bao giờ được tải lên bất kỳ máy chủ nào.",
+    "langLabel": "Ngôn ngữ"
+  },
+  "ar": {
+    "tagline": "تتبع مرجعي عبر كاميرتك",
+    "dropTitle": "أسقط مرجعك",
+    "dropSub": "انقر للتصفح، اسحب ملفًا هنا، أو الصق صورة",
+    "chooseImage": "اختر صورة",
+    "dropHint": "PNG · JPG · WEBP · HEIC — حتى 40 ميغابايت",
+    "adjustTitle": "ضبط المرجع",
+    "filterNormal": "عادي",
+    "filterGrayscale": "تدرج رمادي",
+    "filterHighContrast": "تباين عالٍ",
+    "filterSketch": "رسم تخطيطي",
+    "filterEdgeDetect": "كشف الحواف",
+    "filterBlueprint": "مخطط هندسي",
+    "lblOpacity": "الشفافية",
+    "lblBrightness": "السطوع",
+    "lblContrast": "التباين",
+    "lblSharpness": "الحدة",
+    "lblEdge": "قوة الحواف",
+    "lblSaturation": "التشبع",
+    "lblBlur": "الضبابية",
+    "lblScale": "الحجم",
+    "lblRotation": "الدوران",
+    "reset": "إعادة ضبط",
+    "openCamera": "فتح الكاميرا",
+    "startDrawing": "بدء وضع الرسم",
+    "transformLabel": "التحويل",
+    "hintHide": "إخفاء",
+    "hintReset": "إعادة ضبط",
+    "hintFullscreen": "ملء الشاشة",
+    "hintMove": "تحريك",
+    "hintExit": "خروج",
+    "guideTitle": "كيف يعمل Giotto Sketch Studio",
+    "guideSteps": [
+      "ارفع صورة تريد استخدامها كمرجع رسم.",
+      "اضبطها باستخدام المرشحات وأشرطة التمرير — الشفافية، الحدة، قوة الحواف والمزيد.",
+      "اضغط على “فتح الكاميرا” للانتقال إلى بث الكاميرا المباشر.",
+      "تظهر الصورة المعدّلة كطبقة فوق الكاميرا.",
+      "ضع ورقتك أسفلها، ضمن مجال رؤية الكاميرا.",
+      "اسحب أو اقرص أو دوّر الطبقة حتى تتطابق مع ورقتك.",
+      "اضبط الشفافية بدقة، ثم اضغط على “بدء وضع الرسم” وارسم بيدويًا."
+    ],
+    "errUnsupported": "نوع الملف غير مدعوم. يرجى استخدام PNG أو JPG أو WEBP أو HEIC.",
+    "errTooLarge": "الملف كبير جدًا. الحجم الأقصى هو 40 ميغابايت.",
+    "errCantRead": "تعذّرت قراءة هذه الصورة. إذا كانت HEIC، جرّب تحويلها إلى JPG أولاً.",
+    "errCamera": "تم رفض الوصول إلى الكاميرا أو أنها غير متاحة. تحقق من أذونات المتصفح/الموقع.",
+    "guidePrivacy": "الخصوصية: كل شيء يحدث على جهازك. صورتك وبث الكاميرا لا يُرفعان أبدًا إلى أي خادم.",
+    "langLabel": "اللغة"
+  },
+  "fa": {
+    "tagline": "ردیابی مرجع، از طریق دوربین شما",
+    "dropTitle": "مرجع خود را رها کنید",
+    "dropSub": "برای مرور کلیک کنید، یک فایل را اینجا بکشید، یا یک تصویر پیست کنید",
+    "chooseImage": "انتخاب تصویر",
+    "dropHint": "PNG · JPG · WEBP · HEIC — تا 40 مگابایت",
+    "adjustTitle": "تنظیم مرجع",
+    "filterNormal": "عادی",
+    "filterGrayscale": "خاکستری",
+    "filterHighContrast": "کنتراست بالا",
+    "filterSketch": "طرح",
+    "filterEdgeDetect": "تشخیص لبه",
+    "filterBlueprint": "نقشه فنی",
+    "lblOpacity": "شفافیت",
+    "lblBrightness": "روشنایی",
+    "lblContrast": "کنتراست",
+    "lblSharpness": "وضوح",
+    "lblEdge": "قدرت لبه",
+    "lblSaturation": "اشباع",
+    "lblBlur": "محو",
+    "lblScale": "مقیاس",
+    "lblRotation": "چرخش",
+    "reset": "بازنشانی",
+    "openCamera": "باز کردن دوربین",
+    "startDrawing": "شروع حالت رسم",
+    "transformLabel": "تبدیل",
+    "hintHide": "پنهان",
+    "hintReset": "بازنشانی",
+    "hintFullscreen": "تمام صفحه",
+    "hintMove": "جابه‌جایی",
+    "hintExit": "خروج",
+    "guideTitle": "Giotto Sketch Studio چگونه کار می‌کند",
+    "guideSteps": [
+      "عکسی را که می‌خواهید به عنوان مرجع طراحی استفاده کنید آپلود کنید.",
+      "آن را با فیلترها و لغزش‌ها تنظیم کنید — شفافیت، وضوح، قدرت لبه و بیشتر.",
+      "روی “باز کردن دوربین” ضربه بزنید تا به تصویر زنده دوربین بروید.",
+      "تصویر ویرایش‌شده به صورت یک لایه روی دوربین ظاهر می‌شود.",
+      "کاغذ خود را زیر آن، در دید دوربین قرار دهید.",
+      "لایه را بکشید، فشار دهید یا بچرخانید تا با کاغذتان هم‌راستا شود.",
+      "شفافیت را تنظیم دقیق کنید، سپس روی “شروع حالت رسم” بزنید و با دست ردیابی کنید."
+    ],
+    "errUnsupported": "نوع فایل پشتیبانی نمی‌شود. لطفاً از PNG، JPG، WEBP یا HEIC استفاده کنید.",
+    "errTooLarge": "حجم فایل زیاد است. حداکثر حجم مجاز 40 مگابایت است.",
+    "errCantRead": "این تصویر خوانده نشد. اگر HEIC است، ابتدا آن را به JPG تبدیل کنید.",
+    "errCamera": "دسترسی به دوربین رد شد یا در دسترس نیست. دسترسی‌های مرورگر/سایت را بررسی کنید.",
+    "guidePrivacy": "حریم خصوصی: همه‌چیز روی دستگاه شما انجام می‌شود. عکس و تصویر دوربین شما هرگز به هیچ سروری ارسال نمی‌شود.",
+    "langLabel": "زبان"
+  },
+  "ur": {
+    "tagline": "آپ کے کیمرے کے ذریعے ریفرنس ٹریسنگ",
+    "dropTitle": "اپنا ریفرنس ڈراپ کریں",
+    "dropSub": "براؤز کرنے کے لیے کلک کریں، فائل یہاں گھسیٹیں، یا تصویر پیسٹ کریں",
+    "chooseImage": "تصویر منتخب کریں",
+    "dropHint": "PNG · JPG · WEBP · HEIC — 40MB تک",
+    "adjustTitle": "ریفرنس ایڈجسٹ کریں",
+    "filterNormal": "معمولی",
+    "filterGrayscale": "گرے ٹون",
+    "filterHighContrast": "زیادہ کنٹراسٹ",
+    "filterSketch": "اسکیٰچ",
+    "filterEdgeDetect": "کنارے کی شناخت",
+    "filterBlueprint": "بلو پرنٹ",
+    "lblOpacity": "شفافیت",
+    "lblBrightness": "روشنی",
+    "lblContrast": "کنٹراسٹ",
+    "lblSharpness": "تیزی",
+    "lblEdge": "کنارے کی طاقت",
+    "lblSaturation": "سیٰٰچوریشن",
+    "lblBlur": "دھندلا",
+    "lblScale": "سیر",
+    "lblRotation": "گھماؤ",
+    "reset": "دوبارہ مرتب کریں",
+    "openCamera": "کیمرہ کھولیں",
+    "startDrawing": "ڈرائنگ موڈ شروع کریں",
+    "transformLabel": "تبدیلی",
+    "hintHide": "چھپائیں",
+    "hintReset": "دوبارہ مرتب",
+    "hintFullscreen": "مکمل اسکرین",
+    "hintMove": "حرکت دیں",
+    "hintExit": "باہر نکلیں",
+    "guideTitle": "Giotto Sketch Studio کیسے کام کرتا ہے",
+    "guideSteps": [
+      "ایک تصویر اپ لوڈ کریں جسے آپ ڈرائنگ ریفرنس کے طور پر استعمال کرنا चاہتے ہیں۔",
+      "فلٹرز اور سلائڈرز کے ساتھ اسے ایڈجسٹ کریں — شفافیت، تیزی، کنارے کی طاقت اور مزید۔",
+      "لائو کیمرہ فیڈ پر جانے کے لیے “کیمرہ کھولیں” پر تھپتھپائیں۔",
+      "ترمیم شدہ تصویر کیمرہ کے اوپر ایک اوورلے کے طور پر ظاہر ہوتی ہے۔",
+      "اپنا کاغذ نیچے رکھیں، کیمرہ کے منظر میں۔",
+      "اوورلے کو کھینچیں، دبائیں، یا گھمائیں جب تک یہ آپ کے کاغذ کے ساتھ میل نہ جائے۔",
+      "شفافیت کو بہتر بنائیں، پھر “ڈرائنگ موڈ شروع کریں” پر تھپتھپائیں اور ہاتھ سے ٹریس کریں۔"
+    ],
+    "errUnsupported": "غیر معاون فائل قسم۔ براہ مہربانی PNG، JPG، WEBP یا HEIC استعمال کریں۔",
+    "errTooLarge": "فائل بہت بڑی ہے۔ زیادہ سے زیادہ سائز 40MB ہے۔",
+    "errCantRead": "یہ تصویر پڑھی نہیں جا سکی۔ اگر یہ HEIC ہے تو پہلے اسے JPG میں تبدیل کرنے کی کوشش کریں۔",
+    "errCamera": "کیمرہ تک رسائی مسترد یا دستیاب نہیں۔ اپنے براؤزر/سائٹ کی اجازتیں چیک کریں۔",
+    "guidePrivacy": "رازداری: ہر چیز آپ کے ڈیوائس پر ہوتی ہے۔ آپ کی تصویر اور کیمرہ فیڈ کبھی بھی کسی سرور پر اپ لوڈ نہیں ہوتی۔",
+    "langLabel": "زبان"
+  },
+  "ru": {
+    "tagline": "Калькирование по референсу через вашу камеру",
+    "dropTitle": "Перетащите референс",
+    "dropSub": "Нажмите, чтобы выбрать файл, перетащите файл сюда или вставьте изображение",
+    "chooseImage": "Выбрать изображение",
+    "dropHint": "PNG · JPG · WEBP · HEIC — до 40МБ",
+    "adjustTitle": "НАСТРОЙКА РЕФЕРЕНСА",
+    "filterNormal": "Обычный",
+    "filterGrayscale": "Чёрно-белый",
+    "filterHighContrast": "Высокий контраст",
+    "filterSketch": "Эскиз",
+    "filterEdgeDetect": "Выделение краёв",
+    "filterBlueprint": "Чертёж",
+    "lblOpacity": "Непрозрачность",
+    "lblBrightness": "Яркость",
+    "lblContrast": "Контраст",
+    "lblSharpness": "Резкость",
+    "lblEdge": "Сила краёв",
+    "lblSaturation": "Насыщенность",
+    "lblBlur": "Размытие",
+    "lblScale": "Масштаб",
+    "lblRotation": "Поворот",
+    "reset": "Сбросить",
+    "openCamera": "Открыть камеру",
+    "startDrawing": "Начать режим рисования",
+    "transformLabel": "ТРАНСФОРМАЦИЯ",
+    "hintHide": "скрыть",
+    "hintReset": "сброс",
+    "hintFullscreen": "полный экран",
+    "hintMove": "двигать",
+    "hintExit": "выйти",
+    "guideTitle": "Как работает Giotto Sketch Studio",
+    "guideSteps": [
+      "Загрузите фото, которое вы хотите использовать как референс для рисования.",
+      "Настройте его с помощью фильтров и ползунков — непрозрачность, резкость, сила краёв и др.",
+      "Нажмите «Открыть камеру», чтобы перейти к трансляции с вашей камеры.",
+      "Отредактированное изображение появится как наложение поверх камеры.",
+      "Положите ваш лист бумаги внизу, в поле зрения камеры.",
+      "Перетаскивайте, масштабируйте или поворачивайте наложение, пока оно не совместится с листом.",
+      "Настройте непрозрачность, затем нажмите «Начать режим рисования» и обводите вручную."
+    ],
+    "errUnsupported": "Неподдерживаемый тип файла. Используйте PNG, JPG, WEBP или HEIC.",
+    "errTooLarge": "Файл слишком большой. Максимальный размер — 40МБ.",
+    "errCantRead": "Не удалось прочитать это изображение. Если это HEIC, попробуйте сначала конвертировать в JPG.",
+    "errCamera": "Доступ к камере запрещён или недоступен. Проверьте разрешения браузера/сайта.",
+    "guidePrivacy": "Конфиденциальность: всё происходит на вашем устройстве. Ваше фото и видео с камеры никогда не отправляются на сервер.",
+    "langLabel": "Язык"
+  },
+  "zh": {
+    "tagline": "通过您的相机进行参考描摹",
+    "dropTitle": "拖放您的参考图",
+    "dropSub": "点击浏览，将文件拖到此处，或粘贴图片",
+    "chooseImage": "选择图片",
+    "dropHint": "PNG · JPG · WEBP · HEIC — 最大 40MB",
+    "adjustTitle": "调整参考图",
+    "filterNormal": "正常",
+    "filterGrayscale": "灰度",
+    "filterHighContrast": "高对比度",
+    "filterSketch": "素描",
+    "filterEdgeDetect": "边缘检测",
+    "filterBlueprint": "蓝图",
+    "lblOpacity": "不透明度",
+    "lblBrightness": "亮度",
+    "lblContrast": "对比度",
+    "lblSharpness": "锐度",
+    "lblEdge": "边缘强度",
+    "lblSaturation": "饱和度",
+    "lblBlur": "模糊",
+    "lblScale": "缩放",
+    "lblRotation": "旋转",
+    "reset": "重置",
+    "openCamera": "打开相机",
+    "startDrawing": "开始绘画模式",
+    "transformLabel": "变换",
+    "hintHide": "隐藏",
+    "hintReset": "重置",
+    "hintFullscreen": "全屏",
+    "hintMove": "移动",
+    "hintExit": "退出",
+    "guideTitle": "Giotto Sketch Studio 使用说明",
+    "guideSteps": [
+      "上传一张您想用作绘画参考的照片。",
+      "使用滤镜和滑块进行调整——不透明度、锐度、边缘强度等。",
+      "点击“打开相机”切换到实时相机画面。",
+      "编辑后的图像会以叠加层的形式出现在相机画面上方。",
+      "把纸放在下方，置于相机取景范围内。",
+      "拖动、双指缩放或旋转叠加层，直到与您的纸张对齐。",
+      "微调不透明度，然后点击“开始绘画模式”，手动描摹。"
+    ],
+    "errUnsupported": "不支持的文件类型。请使用 PNG、JPG、WEBP 或 HEIC。",
+    "errTooLarge": "文件过大。最大允许大小为 40MB。",
+    "errCantRead": "无法读取此图片。如果是 HEIC 格式，请先尝试转换为 JPG。",
+    "errCamera": "相机访问被拒绝或不可用。请检查浏览器/网站权限。",
+    "guidePrivacy": "隐私：一切都在您的设备上进行。您的照片和相机画面永远不会上传到任何服务器。",
+    "langLabel": "语言"
+  },
+  "ja": {
+    "tagline": "カメラを通してリファレンスをトレース",
+    "dropTitle": "リファレンスをドロップ",
+    "dropSub": "クリックして参照、ファイルをここにドラッグ、または画像を貼り付け",
+    "chooseImage": "画像を選択",
+    "dropHint": "PNG・JPG・WEBP・HEIC — 最大40MB",
+    "adjustTitle": "リファレンスを調整",
+    "filterNormal": "標準",
+    "filterGrayscale": "グレースケール",
+    "filterHighContrast": "高コントラスト",
+    "filterSketch": "スケッチ",
+    "filterEdgeDetect": "エッジ検出",
+    "filterBlueprint": "ブループリント",
+    "lblOpacity": "不透明度",
+    "lblBrightness": "明るさ",
+    "lblContrast": "コントラスト",
+    "lblSharpness": "シャープネス",
+    "lblEdge": "エッジ強度",
+    "lblSaturation": "彩度",
+    "lblBlur": "ぼかし",
+    "lblScale": "スケール",
+    "lblRotation": "回転",
+    "reset": "リセット",
+    "openCamera": "カメラを開く",
+    "startDrawing": "描画モードを開始",
+    "transformLabel": "変形",
+    "hintHide": "非表示",
+    "hintReset": "リセット",
+    "hintFullscreen": "全画面表示",
+    "hintMove": "移動",
+    "hintExit": "終了",
+    "guideTitle": "Giotto Sketch Studio の使い方",
+    "guideSteps": [
+      "描画のリファレンスとして使いたい写真をアップロードします。",
+      "フィルターとスライダーで調整します — 不透明度、シャープネス、エッジ強度など。",
+      "「カメラを開く」をタップしてライブカメラ映像に切り替えます。",
+      "編集した画像がカメラの上にオーバーレイとして表示されます。",
+      "紙をカメラの視野内、下に置きます。",
+      "オーバーレイをドラッグ、ピンチ、回転させて紙に位置を合わせます。",
+      "不透明度を微調整し、「描画モードを開始」をタップして手描きでトレースします。"
+    ],
+    "errUnsupported": "サポートされていないファイル形式です。PNG、JPG、WEBP、またはHEICを使用してください。",
+    "errTooLarge": "ファイルが大きすぎます。最大サイズは40MBです。",
+    "errCantRead": "この画像を読み込めませんでした。HEIC形式の場合は、先にJPGに変換してみてください。",
+    "errCamera": "カメラへのアクセスが拒否されたか、利用できません。ブラウザ/サイトの権限を確認してください。",
+    "guidePrivacy": "プライバシー：すべてお使いのデバイス内で処理されます。写真とカメラ映像がサーバーにアップロードされることはありません。",
+    "langLabel": "言語"
+  },
+  "ko": {
+    "tagline": "카메라를 통한 레퍼런스 트레이싱",
+    "dropTitle": "레퍼런스를 드롭하세요",
+    "dropSub": "클릭하여 찾아보거나, 파일을 여기로 드래그하거나, 이미지를 붙여넣으세요",
+    "chooseImage": "이미지 선택",
+    "dropHint": "PNG · JPG · WEBP · HEIC — 최대 40MB",
+    "adjustTitle": "레퍼런스 조정",
+    "filterNormal": "기본",
+    "filterGrayscale": "흑백",
+    "filterHighContrast": "고대비",
+    "filterSketch": "스케치",
+    "filterEdgeDetect": "윤곽선 감지",
+    "filterBlueprint": "청사진",
+    "lblOpacity": "불투명도",
+    "lblBrightness": "밝기",
+    "lblContrast": "대비",
+    "lblSharpness": "선명도",
+    "lblEdge": "윤곽선 강도",
+    "lblSaturation": "채도",
+    "lblBlur": "흐림",
+    "lblScale": "크기",
+    "lblRotation": "회전",
+    "reset": "초기화",
+    "openCamera": "카메라 열기",
+    "startDrawing": "드로잉 모드 시작",
+    "transformLabel": "변형",
+    "hintHide": "숨기기",
+    "hintReset": "초기화",
+    "hintFullscreen": "전체 화면",
+    "hintMove": "이동",
+    "hintExit": "종료",
+    "guideTitle": "Giotto Sketch Studio 사용 방법",
+    "guideSteps": [
+      "그림 레퍼런스로 사용할 사진을 업로드하세요.",
+      "필터와 슬라이더로 조정하세요 — 불투명도, 선명도, 윤곽선 강도 등.",
+      "“카메라 열기”를 눌러 실시간 카메라 화면으로 전환하세요.",
+      "편집한 이미지가 카메라 위에 오버레이로 표시됩니다.",
+      "종이를 카메라 시야 안, 아래쪽에 놓으세요.",
+      "오버레이를 드래그, 핀치, 회전하여 종이와 맞추세요.",
+      "불투명도를 미세 조정한 다음 “드로잉 모드 시작”을 눌러 손으로 따라 그리세요."
+    ],
+    "errUnsupported": "지원되지 않는 파일 형식입니다. PNG, JPG, WEBP 또는 HEIC를 사용하세요.",
+    "errTooLarge": "파일이 너무 큽니다. 최대 크기는 40MB입니다.",
+    "errCantRead": "이 이미지를 읽을 수 없습니다. HEIC 형식이라면 먼저 JPG로 변환해 보세요.",
+    "errCamera": "카메라 접근이 거부되었거나 사용할 수 없습니다. 브라우저/사이트 권한을 확인하세요.",
+    "guidePrivacy": "개인정보 보호: 모든 작업은 사용자의 기기에서 이루어집니다. 사진과 카메라 화면은 어떤 서버에도 업로드되지 않습니다.",
+    "langLabel": "언어"
+  },
+  "hi": {
+    "tagline": "आपके कैमरे के ज़रिए संदर्भ ट्रेसिंग",
+    "dropTitle": "अपना संदर्भ ड्रॉप करें",
+    "dropSub": "ब्राउज़ करने के लिए क्लिक करें, यहाँ फ़ाइल खींचें, या एक छवि पेस्ट करें",
+    "chooseImage": "छवि चुनें",
+    "dropHint": "PNG · JPG · WEBP · HEIC — 40MB तक",
+    "adjustTitle": "संदर्भ समायोजित करें",
+    "filterNormal": "सामान्य",
+    "filterGrayscale": "ग्रेस्केल",
+    "filterHighContrast": "उच्च कंट्रास्ट",
+    "filterSketch": "स्केच",
+    "filterEdgeDetect": "एज डिटेक्ट",
+    "filterBlueprint": "ब्लूप्रिंट",
+    "lblOpacity": "अपारदर्शिता",
+    "lblBrightness": "चमक",
+    "lblContrast": "कंट्रास्ट",
+    "lblSharpness": "तीक्ष्णता",
+    "lblEdge": "किनारे की ताकत",
+    "lblSaturation": "संतृप्ति",
+    "lblBlur": "धुंधलापन",
+    "lblScale": "स्केल",
+    "lblRotation": "घुमाव",
+    "reset": "रीसेट करें",
+    "openCamera": "कैमरा खोलें",
+    "startDrawing": "ड्रॉइंग मोड शुरू करें",
+    "transformLabel": "ट्रांसफ़ॉर्म",
+    "hintHide": "छुपाएं",
+    "hintReset": "रीसेट",
+    "hintFullscreen": "पूर्ण स्क्रीन",
+    "hintMove": "स्थानांतरित करें",
+    "hintExit": "बाहर निकलें",
+    "guideTitle": "Giotto Sketch Studio कैसे काम करता है",
+    "guideSteps": [
+      "एक फ़ोटो अपलोड करें जिसे आप ड्रॉइंग संदर्भ के रूप में उपयोग करना चाहते हैं।",
+      "इसे फ़िल्टर और स्लाइडर के साथ समायोजित करें — अपारदर्शिता, तीक्ष्णता, किनारे की ताकत और अधिक।",
+      "लाइव कैमरा फ़ीड पर स्विच करने के लिए “कैमरा खोलें” टैप करें।",
+      "संपादित छवि कैमरे के ऊपर एक ओवरले के रूप में दिखाई देती है।",
+      "अपने कागज़ को नीचे, कैमरे के दृश्य में रखें।",
+      "ओवरले को तब तक खींचें, पिंच करें, या घुमाएं जब तक यह आपके कागज़ से मेल न खाए।",
+      "अपारदर्शिता को फ़ाइन-ट्यून करें, फिर “ड्रॉइंग मोड शुरू करें” टैप करें और हाथ से ट्रेस करें।"
+    ],
+    "errUnsupported": "असमर्थित फ़ाइल प्रकार। कृपया PNG, JPG, WEBP, या HEIC का उपयोग करें।",
+    "errTooLarge": "फ़ाइल बहुत बड़ी है। अधिकतम आकार 40MB है।",
+    "errCantRead": "यह छवि पढ़ी नहीं जा सकी। यदि यह HEIC है, तो पहले इसे JPG में बदलने का प्रयास करें।",
+    "errCamera": "कैमरा एक्सेस अस्वीकृत या अनुपलब्ध है। अपने ब्राउज़र/साइट अनुमतियां जांचें।",
+    "guidePrivacy": "गोपनीयता: सब कुछ आपके डिवाइस पर होता है। आपकी फ़ोटो और कैमरा फ़ीड कभी भी किसी सर्वर पर अपलोड नहीं होते।",
+    "langLabel": "भाषा"
+  },
+  "mr": {
+    "tagline": "तुमच्या कॅमेराद्वारे संदर्भ ट्रेसिंग",
+    "dropTitle": "तुमचा संदर्भ ड्रॉप करा",
+    "dropSub": "ब्राउझ करण्यासाठी क्लिक करा, फाइल इथे ड्रॅग करा, किंवा प्रतिमा पेस्ट करा",
+    "chooseImage": "प्रतिमा निवडा",
+    "dropHint": "PNG · JPG · WEBP · HEIC — 40MB पर्यंत",
+    "adjustTitle": "संदर्भ समायोजित करा",
+    "filterNormal": "सामान्य",
+    "filterGrayscale": "ग्रेस्केल",
+    "filterHighContrast": "उच्च कॉन्ट्रास्ट",
+    "filterSketch": "स्केच",
+    "filterEdgeDetect": "एज डिटेक्ट",
+    "filterBlueprint": "ब्लूप्रिंट",
+    "lblOpacity": "अपारदर्शकता",
+    "lblBrightness": "चमक",
+    "lblContrast": "कॉन्ट्रास्ट",
+    "lblSharpness": "तीक्ष्णता",
+    "lblEdge": "कडेची ताकद",
+    "lblSaturation": "संपृक्तता",
+    "lblBlur": "धूसरता",
+    "lblScale": "स्केल",
+    "lblRotation": "फिरवणे",
+    "reset": "रीसेट करा",
+    "openCamera": "कॅमेरा उघडा",
+    "startDrawing": "ड्रॉइंग मोड सुरू करा",
+    "transformLabel": "ट्रान्सफॉर्म",
+    "hintHide": "लपवा",
+    "hintReset": "रीसेट",
+    "hintFullscreen": "पूर्ण स्क्रीन",
+    "hintMove": "हलवा",
+    "hintExit": "बाहेर पडा",
+    "guideTitle": "Giotto Sketch Studio कसे कार्य करते",
+    "guideSteps": [
+      "ड्रॉइंग संदर्भ म्हणून वापरायचा असलेला फोटो अपलोड करा.",
+      "फिल्टर आणि स्लायडर्ससह समायोजित करा — अपारदर्शकता, तीक्ष्णता, कडेची ताकद आणि बरेच काही.",
+      "लाइव्ह कॅमेरा फीडवर स्विच करण्यासाठी “कॅमेरा उघडा” टॅप करा.",
+      "संपादित प्रतिमा कॅमेराच्या वर एक ओव्हरले म्हणून दिसते.",
+      "तुमचा कागद खाली, कॅमेराच्या दृश्यात ठेवा.",
+      "ओव्हरले तुमच्या कागदाशी जुळेपर्यंत ड्रॅग, पिंच किंवा फिरवा.",
+      "अपारदर्शकता बारकाईने समायोजित करा, नंतर “ड्रॉइंग मोड सुरू करा” टॅप करा आणि हाताने ट्रेस करा."
+    ],
+    "errUnsupported": "असमर्थित फाइल प्रकार. कृपया PNG, JPG, WEBP, किंवा HEIC वापरा.",
+    "errTooLarge": "फाइल खूप मोठी आहे. कमाल आकार 40MB आहे.",
+    "errCantRead": "ही प्रतिमा वाचता आली नाही. जर ती HEIC असेल, तर आधी JPG मध्ये रूपांतरित करण्याचा प्रयत्न करा.",
+    "errCamera": "कॅमेरा प्रवेश नाकारला गेला किंवा उपलब्ध नाही. तुमच्या ब्राउझर/साइट परवानग्या तपासा.",
+    "guidePrivacy": "गोपनीयता: सर्व काही तुमच्या डिव्हाइसवर घडते. तुमचा फोटो आणि कॅमेरा फीड कधीही कोणत्याही सर्व्हरवर अपलोड होत नाहीत.",
+    "langLabel": "भाषा"
+  },
+  "bn": {
+    "tagline": "আপনার ক্যামেরার মাধ্যমে রেফারেন্স ট্রেসিং",
+    "dropTitle": "আপনার রেফারেন্স ড্রপ করুন",
+    "dropSub": "ব্রাউজ করতে ক্লিক করুন, একটি ফাইল এখানে টেনে আনুন, বা একটি ছবি পেস্ট করুন",
+    "chooseImage": "ছবি নির্বাচন করুন",
+    "dropHint": "PNG · JPG · WEBP · HEIC — সর্বোচ্চ 40MB",
+    "adjustTitle": "রেফারেন্স সামঞ্জস্য করুন",
+    "filterNormal": "সাধারণ",
+    "filterGrayscale": "গ্রেস্কেল",
+    "filterHighContrast": "উচ্চ কনট্রাস্ট",
+    "filterSketch": "স্কেচ",
+    "filterEdgeDetect": "প্রান্ত সনাক্তকরণ",
+    "filterBlueprint": "ব্লুপ্রিন্ট",
+    "lblOpacity": "অস্বচ্ছতা",
+    "lblBrightness": "উজ্জ্বলতা",
+    "lblContrast": "কনট্রাস্ট",
+    "lblSharpness": "তীক্ষ্णতা",
+    "lblEdge": "প্রান্তের শক্তি",
+    "lblSaturation": "স্যাচুরেশন",
+    "lblBlur": "ঝাপসা",
+    "lblScale": "স্কেল",
+    "lblRotation": "ঘূর্ণন",
+    "reset": "রিসেট করুন",
+    "openCamera": "ক্যামেরা খুলুন",
+    "startDrawing": "ড্রয়িং মোড শুরু করুন",
+    "transformLabel": "রূপান্তর",
+    "hintHide": "লুকান",
+    "hintReset": "রিসেট",
+    "hintFullscreen": "পূর্ণ স্ক্রিন",
+    "hintMove": "সরান",
+    "hintExit": "প্রস্থান",
+    "guideTitle": "Giotto Sketch Studio কীভাবে কাজ করে",
+    "guideSteps": [
+      "একটি ছবি আপলোড করুন যা আপনি ড্রয়িং রেফারেন্স হিসেবে ব্যবহার করতে চান।",
+      "ফিল্টার এবং স্লাইডার দিয়ে এটি সামঞ্জস্য করুন — অস্বচ্ছতা, তীক্ষ্णতা, প্রান্তের শক্তি এবং আরও অনেক কিছু।",
+      "লাইভ ক্যামেরা ফিডে যেতে “ক্যামেরা খুলুন” এ ট্যাপ করুন।",
+      "সম্পাদিত ছবিটি ক্যামেরার উপরে একটি ওভারলে হিসেবে প্রদর্শিত হয়।",
+      "আপনার কাগজ নিচে, ক্যামেরার দৃশ্যের মধ্যে রাখুন।",
+      "ওভারলেটি আপনার কাগজের সাথে সারিবদ্ধ না হওয়া পর্যন্ত টেনে আনুন, চিমটি দিন, বা ঘোরান।",
+      "অস্বচ্ছতা সূক্ষ্ম-সুর করুন, তারপর “ড্রয়িং মোড শুরু করুন” এ ট্যাপ করে হাতে ট্রেস করুন।"
+    ],
+    "errUnsupported": "অসমর্থিত ফাইল প্রকার। অনুগ্রহ করে PNG, JPG, WEBP, বা HEIC ব্যবহার করুন।",
+    "errTooLarge": "ফাইলটি খুব বড়। সর্বোচ্চ আকার 40MB।",
+    "errCantRead": "এই ছবিটি পড়া যায়নি। এটি HEIC হলে, প্রথমে JPG-তে রূপান্তর করার চেষ্টা করুন।",
+    "errCamera": "ক্যামেরা অ্যাক্সেস প্রত্যাখ্যান করা হয়েছে বা অনুপলব্ধ। আপনার ব্রাউজার/সাইট অনুমতি পরীক্ষা করুন।",
+    "guidePrivacy": "গোপনীয়তা: সবকিছু আপনার ডিভাইসে ঘটে। আপনার ছবি এবং ক্যামেরা ফিড কখনোই কোনো সার্ভারে আপলোড করা হয় না।",
+    "langLabel": "ভাষা"
+  },
+  "pa": {
+    "tagline": "ਤੁਹਾਡੇ ਕੈਮਰੇ ਰਾਹੀਂ ਹਵਾਲਾ ਟ੍ਰੇਸਿੰਗ",
+    "dropTitle": "ਆਪਣਾ ਹਵਾਲਾ ਡ੍ਰੌਪ ਕਰੋ",
+    "dropSub": "ਬ੍ਰਾਊਜ਼ ਕਰਨ ਲਈ ਕਲਿੱਕ ਕਰੋ, ਇੱਕ ਫਾਈਲ ਇੱਥੇ ਖਿੱਚੋ, ਜਾਂ ਇੱਕ ਚਿੱਤਰ ਪੇਸਟ ਕਰੋ",
+    "chooseImage": "ਚਿੱਤਰ ਚੁਣੋ",
+    "dropHint": "PNG · JPG · WEBP · HEIC — 40MB ਤੱਕ",
+    "adjustTitle": "ਹਵਾਲਾ ਵਿਵਸਥਿਤ ਕਰੋ",
+    "filterNormal": "ਸਧਾਰਨ",
+    "filterGrayscale": "ਗ੍ਰੇਸਕੇਲ",
+    "filterHighContrast": "ਉੱਚ ਕੰਟ੍ਰਾਸਟ",
+    "filterSketch": "ਸਕੈਚ",
+    "filterEdgeDetect": "ਕਿਨਾਰਾ ਖੋਜ",
+    "filterBlueprint": "ਬਲੂਪ੍ਰਿੰਟ",
+    "lblOpacity": "ਧੁੰਦਲਾਪਨ",
+    "lblBrightness": "ਚਮਕ",
+    "lblContrast": "ਕੰਟ੍ਰਾਸਟ",
+    "lblSharpness": "ਤਿੱਖਾਪਨ",
+    "lblEdge": "ਕਿਨਾਰੇ ਦੀ ਤਾਕਤ",
+    "lblSaturation": "ਸੰਤ੍ਰਿਪਤਾ",
+    "lblBlur": "ਧੁੰਦਲਾ",
+    "lblScale": "ਸਕੇਲ",
+    "lblRotation": "ਘੁੰਮਾਓ",
+    "reset": "ਰੀਸੈੱਟ ਕਰੋ",
+    "openCamera": "ਕੈਮਰਾ ਖੋਲ੍ਹੋ",
+    "startDrawing": "ਡ੍ਰਾਇੰਗ ਮੋਡ ਸ਼ੁਰੂ ਕਰੋ",
+    "transformLabel": "ਰੂਪਾਂਤਰਣ",
+    "hintHide": "ਲੁਕਾਓ",
+    "hintReset": "ਰੀਸੈੱਟ",
+    "hintFullscreen": "ਪੂਰੀ ਸਕ੍ਰੀਨ",
+    "hintMove": "ਹਿਲਾਓ",
+    "hintExit": "ਬਾਹਰ ਜਾਓ",
+    "guideTitle": "Giotto Sketch Studio ਕਿਵੇਂ ਕੰਮ ਕਰਦਾ ਹੈ",
+    "guideSteps": [
+      "ਇੱਕ ਫੋਟੋ ਅੱਪਲੋਡ ਕਰੋ ਜਿਸਨੂੰ ਤੁਸੀਂ ਡ੍ਰਾਇੰਗ ਹਵਾਲੇ ਵਜੋਂ ਵਰਤਣਾ ਚਾਹੁੰਦੇ ਹੋ।",
+      "ਇਸਨੂੰ ਫਿਲਟਰਾਂ ਅਤੇ ਸਲਾਈਡਰਾਂ ਨਾਲ ਵਿਵਸਥਿਤ ਕਰੋ — ਧੁੰਦਲਾਪਨ, ਤਿੱਖਾਪਨ, ਕਿਨਾਰੇ ਦੀ ਤਾਕਤ ਅਤੇ ਹੋਰ।",
+      "ਲਾਈਵ ਕੈਮਰਾ ਫੀਡ ਵੱਲ ਜਾਣ ਲਈ “ਕੈਮਰਾ ਖੋਲ੍ਹੋ” ਨੂੰ ਟੈਪ ਕਰੋ।",
+      "ਸੰਪਾਦਿਤ ਚਿੱਤਰ ਕੈਮਰੇ ਦੇ ਉੱਪਰ ਇੱਕ ਓਵਰਲੇ ਵਜੋਂ ਦਿਖਾਈ ਦਿੰਦਾ ਹੈ।",
+      "ਆਪਣਾ ਕਾਗਜ਼ ਹੇਠਾਂ, ਕੈਮਰੇ ਦੇ ਦ੍ਰਿਸ਼ ਵਿੱਚ ਰੱਖੋ।",
+      "ਓਵਰਲੇ ਨੂੰ ਉਦੋਂ ਤੱਕ ਖਿੱਚੋ, ਚੂੰਢੀ ਲਵੋ, ਜਾਂ ਘੁੰਮਾਓ ਜਦੋਂ ਤੱਕ ਇਹ ਤੁਹਾਡੇ ਕਾਗਜ਼ ਨਾਲ ਮੇਲ ਨਹੀਂ ਖਾਂਦਾ।",
+      "ਧੁੰਦਲਾਪਨ ਨੂੰ ਬਾਰੀਕੀ ਨਾਲ ਵਿਵਸਥਿਤ ਕਰੋ, ਫਿਰ “ਡ੍ਰਾਇੰਗ ਮੋਡ ਸ਼ੁਰੂ ਕਰੋ” ਨੂੰ ਟੈਪ ਕਰੋ ਅਤੇ ਹੱਥ ਨਾਲ ਟ੍ਰੇਸ ਕਰੋ।"
+    ],
+    "errUnsupported": "ਗੈਰ-ਸਮਰਥਿਤ ਫਾਈਲ ਕਿਸਮ। ਕਿਰਪਾ ਕਰਕੇ PNG, JPG, WEBP, ਜਾਂ HEIC ਵਰਤੋ।",
+    "errTooLarge": "ਫਾਈਲ ਬਹੁਤ ਵੱਡੀ ਹੈ। ਵੱਧ ਤੋਂ ਵੱਧ ਆਕਾਰ 40MB ਹੈ।",
+    "errCantRead": "ਇਹ ਚਿੱਤਰ ਪੜ੍ਹਿਆ ਨਹੀਂ ਜਾ ਸਕਿਆ। ਜੇ ਇਹ HEIC ਹੈ, ਤਾਂ ਪਹਿਲਾਂ ਇਸਨੂੰ JPG ਵਿੱਚ ਬਦਲਣ ਦੀ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+    "errCamera": "ਕੈਮਰਾ ਪਹੁੰਚ ਤੋਂ ਇਨਕਾਰ ਕੀਤਾ ਗਿਆ ਜਾਂ ਉਪਲਬਧ ਨਹੀਂ। ਆਪਣੇ ਬ੍ਰਾਊਜ਼ਰ/ਸਾਈਟ ਅਨੁਮਤੀਆਂ ਦੀ ਜਾਂਚ ਕਰੋ।",
+    "guidePrivacy": "ਪਰਦੇਦਾਰੀ: ਸਭ ਕੁਝ ਤੁਹਾਡੀ ਡਿਵਾਈਸ 'ਤੇ ਹੁੰਦਾ ਹੈ। ਤੁਹਾਡੀ ਫੋਟੋ ਅਤੇ ਕੈਮਰਾ ਫੀਡ ਕਦੇ ਵੀ ਕਿਸੇ ਸਰਵਰ 'ਤੇ ਅੱਪਲੋਡ ਨਹੀਂ ਹੁੰਦੇ।",
+    "langLabel": "ਭਾਸ਼ਾ"
+  },
+  "ta": {
+    "tagline": "உங்கள் கேமரா மூலம் குறிப்பு டிரேசிங்",
+    "dropTitle": "உங்கள் குறிப்பை இடவும்",
+    "dropSub": "உலாவ கிளிக் செய்யவும், கோப்பை இங்கே இழுக்கவும், அல்லது படத்தை ஒட்டவும்",
+    "chooseImage": "படத்தைத் தேர்ந்தெடுக்கவும்",
+    "dropHint": "PNG · JPG · WEBP · HEIC — அதிகபட்சம் 40MB",
+    "adjustTitle": "குறிப்பை சரிசெய்யவும்",
+    "filterNormal": "இயல்பு",
+    "filterGrayscale": "கிரேஸ்கேல்",
+    "filterHighContrast": "அதிக மாறுபாடு",
+    "filterSketch": "ஓவியம்",
+    "filterEdgeDetect": "விளிம்பு கண்டறிதல்",
+    "filterBlueprint": "புளூபிரிண்ட்",
+    "lblOpacity": "ஒளிபுகாநிலை",
+    "lblBrightness": "பிரகாசம்",
+    "lblContrast": "மாறுபாடு",
+    "lblSharpness": "கூர்மை",
+    "lblEdge": "விளிம்பு வலிமை",
+    "lblSaturation": "செறிவூட்டம்",
+    "lblBlur": "மங்கல்",
+    "lblScale": "அளவு",
+    "lblRotation": "சுழற்சி",
+    "reset": "மீட்டமை",
+    "openCamera": "கேமராவைத் திற",
+    "startDrawing": "வரைதல் பயன்முறையைத் தொடங்கு",
+    "transformLabel": "மாற்றம்",
+    "hintHide": "மறை",
+    "hintReset": "மீட்டமை",
+    "hintFullscreen": "முழுத்திரை",
+    "hintMove": "நகர்த்து",
+    "hintExit": "வெளியேறு",
+    "guideTitle": "Giotto Sketch Studio எப்படி வேலை செய்கிறது",
+    "guideSteps": [
+      "வரைதல் குறிப்பாகப் பயன்படுத்த விரும்பும் புகைப்படத்தைப் பதிவேற்றவும்.",
+      "வடிகட்டிகள் மற்றும் ஸ்லைடர்களுடன் அதைச் சரிசெய்யவும் — ஒளிபுகாநிலை, கூர்மை, விளிம்பு வலிமை மற்றும் பல.",
+      "நேரடி கேமரா ஊட்டத்திற்கு மாற “கேமராவைத் திற” என்பதைத் தட்டவும்.",
+      "திருத்தப்பட்ட படம் கேமராவின் மேல் ஒரு மேலடுக்காகத் தோன்றும்.",
+      "உங்கள் காகிதத்தை கீழே, கேமராவின் பார்வையில் வைக்கவும்.",
+      "மேலடுக்கை உங்கள் காகிதத்துடன் பொருந்தும் வரை இழுக்கவும், பிஞ்ச் செய்யவும், அல்லது சுழற்றவும்.",
+      "ஒளிபுகாநிலையை நுணுக்கமாகச் சரிசெய்து, பின்னர் “வரைதல் பயன்முறையைத் தொடங்கு” என்பதைத் தட்டி கையால் வரையவும்."
+    ],
+    "errUnsupported": "ஆதரிக்கப்படாத கோப்பு வகை. PNG, JPG, WEBP, அல்லது HEIC ஐப் பயன்படுத்தவும்.",
+    "errTooLarge": "கோப்பு மிகப் பெரியது. அதிகபட்ச அளவு 40MB.",
+    "errCantRead": "இந்தப் படத்தைப் படிக்க முடியவில்லை. இது HEIC எனில், முதலில் JPG ஆக மாற்ற முயற்சிக்கவும்.",
+    "errCamera": "கேமரா அணுகல் மறுக்கப்பட்டது அல்லது கிடைக்கவில்லை. உங்கள் உலாவி/தள அனுமதிகளைச் சரிபார்க்கவும்.",
+    "guidePrivacy": "தனியுரிமை: எல்லாம் உங்கள் சாதனத்தில் நடக்கிறது. உங்கள் புகைப்படமும் கேமரா ஊட்டமும் எந்த சேவையகத்திற்கும் பதிவேற்றப்படுவதில்லை.",
+    "langLabel": "மொழி"
+  },
+  "te": {
+    "tagline": "మీ కెమెరా ద్వారా రిఫరెన్స్ ట్రేసింగ్",
+    "dropTitle": "మీ రిఫరెన్స్‌ను వదలండి",
+    "dropSub": "బ్రౌజ్ చేయడానికి క్లిక్ చేయండి, ఫైల్‌ను ఇక్కడకు లాగండి, లేదా చిత్రాన్ని పేస్ట్ చేయండి",
+    "chooseImage": "చిత్రాన్ని ఎంచుకోండి",
+    "dropHint": "PNG · JPG · WEBP · HEIC — గరిష్టంగా 40MB",
+    "adjustTitle": "రిఫరెన్స్‌ను సర్దుబాటు చేయండి",
+    "filterNormal": "సాధారణ",
+    "filterGrayscale": "గ్రేస్కేల్",
+    "filterHighContrast": "అధిక కాంట్రాస్ట్",
+    "filterSketch": "స్కెచ్",
+    "filterEdgeDetect": "అంచు గుర్తింపు",
+    "filterBlueprint": "బ్లూప్రింట్",
+    "lblOpacity": "అస్పష్టత",
+    "lblBrightness": "ప్రకాశం",
+    "lblContrast": "కాంట్రాస్ట్",
+    "lblSharpness": "పదునుదనం",
+    "lblEdge": "అంచు బలం",
+    "lblSaturation": "సంతృప్తత",
+    "lblBlur": "అస్పష్టం",
+    "lblScale": "స్కేల్",
+    "lblRotation": "భ్రమణం",
+    "reset": "రీసెట్ చేయండి",
+    "openCamera": "కెమెరాను తెరవండి",
+    "startDrawing": "డ్రాయింగ్ మోడ్‌ను ప్రారంభించండి",
+    "transformLabel": "రూపాంతరం",
+    "hintHide": "దాచు",
+    "hintReset": "రీసెట్",
+    "hintFullscreen": "పూర్తి స్క్రీన్",
+    "hintMove": "తరలించు",
+    "hintExit": "నిష్క్రమించు",
+    "guideTitle": "Giotto Sketch Studio ఎలా పనిచేస్తుంది",
+    "guideSteps": [
+      "డ్రాయింగ్ రిఫరెన్స్‌గా ఉపయోగించాలనుకుంటున్న ఫోటోను అప్‌లోడ్ చేయండి.",
+      "ఫిల్టర్‌లు మరియు స్లయిడర్‌లతో దీన్ని సర్దుబాటు చేయండి — అస్పష్టత, పదునుదనం, అంచు బలం మరియు మరిన్ని.",
+      "లైవ్ కెమెరా ఫీడ్‌కు మారడానికి “కెమెరాను తెరవండి” నొక్కండి.",
+      "సవరించిన చిత్రం కెమెరా పైన ఓవర్‌లేగా కనిపిస్తుంది.",
+      "మీ కాగితాన్ని కింద, కెమెరా వీక్షణలో ఉంచండి.",
+      "ఓవర్‌లే మీ కాగితంతో సరిపోయే వరకు లాగండి, పించ్ చేయండి, లేదా తిప్పండి.",
+      "అస్పష్టతను చక్కగా సర్దుబాటు చేసి, తర్వాత “డ్రాయింగ్ మోడ్‌ను ప్రారంభించండి” నొక్కి చేతితో ట్రేస్ చేయండి."
+    ],
+    "errUnsupported": "మద్దతు లేని ఫైల్ రకం. దయచేసి PNG, JPG, WEBP, లేదా HEIC ఉపయోగించండి.",
+    "errTooLarge": "ఫైల్ చాలా పెద్దది. గరిష్ట పరిమాణం 40MB.",
+    "errCantRead": "ఈ చిత్రాన్ని చదవలేకపోయింది. ఇది HEIC అయితే, ముందుగా దానిని JPGకి మార్చడానికి ప్రయత్నించండి.",
+    "errCamera": "కెమెరా యాక్సెస్ నిరాకరించబడింది లేదా అందుబాటులో లేదు. మీ బ్రౌజర్/సైట్ అనుమతులను తనిఖీ చేయండి.",
+    "guidePrivacy": "గోప్యత: ప్రతిదీ మీ పరికరంలో జరుగుతుంది. మీ ఫోటో మరియు కెమెరా ఫీడ్ ఎప్పటికీ ఏ సర్వర్‌కు అప్‌లోడ్ చేయబడవు.",
+    "langLabel": "భాష"
+  }
+};
+
+  const languageSelector = new LanguageSelector({
+    languages: LANGUAGES,
+    translations: TRANSLATIONS,
+    storageKey: LANG_STORAGE_KEY,
+    defaultCode: "en",
+    panelId: "langPanel",
+    listId: "langList",
+    headerLabelKey: "langLabel",
+    onChange: (lang) => applyLanguage(lang),
+  });
+
+  function t(key){ return languageSelector.t(key); }
 
   /* ============================= DOM ============================= */
   const $ = (id)=>document.getElementById(id);
@@ -1255,33 +2782,33 @@ input[type=range]::-moz-range-thumb{
 
   /* ============================= LANGUAGE ============================= */
   function applyLanguage(lang){
-    state.lang = lang;
     document.querySelectorAll("[data-i18n]").forEach(el=>{
       const key = el.dataset.i18n;
       el.textContent = t(key);
     });
-    document.querySelectorAll(".lang-pill button").forEach(btn=>{
-      btn.classList.toggle("active", btn.dataset.lang === lang);
-    });
     renderGuideSteps();
   }
 
-  document.querySelectorAll(".lang-pill").forEach(pill=>{
-    pill.addEventListener("click", (e)=>{
-      const btn = e.target.closest("button[data-lang]");
-      if(!btn) return;
-      applyLanguage(btn.dataset.lang);
-    });
-  });
+  // Register every globe trigger in the document (one per screen header)
+  // with the single shared language panel.
+  languageSelector.registerTrigger($("langTriggerUpload"));
+  languageSelector.registerTrigger($("langTriggerEditor"));
 
   /* ============================= USAGE GUIDE ============================= */
   const guideOverlay = $("guideOverlay");
   function renderGuideSteps(){
     const list = $("guideSteps");
     list.innerHTML = "";
-    (I18N[state.lang].guideSteps || []).forEach((step, i)=>{
+    const steps = TRANSLATIONS[languageSelector.getCurrent()]?.guideSteps || TRANSLATIONS.en.guideSteps;
+    steps.forEach((step, i)=>{
       const li = document.createElement("li");
-      li.innerHTML = `<span class="num">${i+1}</span><span>${step}</span>`;
+      const num = document.createElement("span");
+      num.className = "num";
+      num.textContent = String(i+1);
+      const txt = document.createElement("span");
+      txt.textContent = step;
+      li.appendChild(num);
+      li.appendChild(txt);
       list.appendChild(li);
     });
     $("guidePrivacy").textContent = t("guidePrivacy");
@@ -1289,11 +2816,13 @@ input[type=range]::-moz-range-thumb{
   $("btnGuide").addEventListener("click", ()=>guideOverlay.classList.add("show"));
   $("btnCloseGuide").addEventListener("click", ()=>guideOverlay.classList.remove("show"));
   guideOverlay.addEventListener("click", (e)=>{ if(e.target === guideOverlay) guideOverlay.classList.remove("show"); });
+  guideOverlay.addEventListener("keydown", (e)=>{ if(e.key === "Escape") guideOverlay.classList.remove("show"); });
 
   /* ============================= INIT ============================= */
   applyLiveCss();
-  applyLanguage("en");
+  applyLanguage(languageSelector.getCurrent());
 })();
+
 </script>
 </body>
 </html>
