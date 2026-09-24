@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Giotto Sketch Studio</title>
+<script>
+/* THEME BOOT: apply the saved theme before first paint, on every screen/page */
+(function(){try{if(localStorage.getItem("giotto-theme")==="light")document.documentElement.setAttribute("data-theme","light");}catch(e){}})();
+</script>
 <style>
 
 :root{
@@ -399,6 +403,69 @@ input[type=range]::-moz-range-thumb{
   .dropzone h2{font-size:18px;}
 }
 .hidden{display:none !important;}
+
+/* ============================= FOOTER CONTROLS (upload screen, bottom-left) ============================= */
+.footer-left{
+  position:absolute; left:18px; bottom:calc(18px + env(safe-area-inset-bottom, 0px)); z-index:7;
+  display:flex; align-items:center; gap:8px;
+}
+@media (max-width:360px){
+  .footer-left{left:14px; gap:6px;}
+  .footer-left .icon-btn{width:40px; height:40px;}
+}
+
+/* Theme toggle: glass icon-btn + ThemeToggleButton3 glyph (sun -> moon, animated in JS) */
+.theme-toggle svg{width:22px; height:22px; overflow:visible;}
+.theme-toggle{view-transition-name:giotto-theme-toggle;}
+::view-transition-old(giotto-theme-toggle){display:none;}
+::view-transition-new(giotto-theme-toggle){animation:none;}
+/* smooth theme switch */
+::view-transition-old(root), ::view-transition-new(root){animation-duration:.45s; animation-timing-function:cubic-bezier(.16,.8,.24,1);}
+html.theme-anim body,
+html.theme-anim body *:not(.theme-toggle):not(.theme-toggle *){
+  transition:background-color .45s ease, color .45s ease, border-color .45s ease, box-shadow .45s ease !important;
+}
+
+/* ============================= LIGHT THEME ============================= */
+html[data-theme="light"]{
+  --bg-0:#f4f5fa;
+  --bg-1:#ffffff;
+  --surface: rgba(255,255,255,0.72);
+  --surface-strong: rgba(255,255,255,0.95);
+  --border: rgba(22,26,52,0.10);
+  --border-strong: rgba(22,26,52,0.18);
+  --text-0:#141625;
+  --text-1:#4b516e;
+  --text-2:#80869f;
+  --blue:#5b79f2;
+  --purple:#9b66f2;
+  --grad-soft: linear-gradient(135deg, rgba(111,141,255,.14), rgba(176,123,255,.14));
+  --shadow-soft: 0 24px 60px -28px rgba(34,40,90,.30);
+}
+html[data-theme="light"] body{
+  background:
+    radial-gradient(circle at 12% 8%, rgba(111,141,255,.16), transparent 42%),
+    radial-gradient(circle at 88% 92%, rgba(176,123,255,.13), transparent 46%),
+    var(--bg-0);
+}
+html[data-theme="light"] .btn-ghost{background:rgba(22,26,52,.04);}
+html[data-theme="light"] .btn-ghost:hover{background:rgba(22,26,52,.08);}
+html[data-theme="light"] .credit-link{border-bottom-color:rgba(22,26,52,.18);}
+html[data-theme="light"] .lang-panel{
+  background:
+    radial-gradient(circle at 100% 0%, rgba(176,123,255,.14), transparent 60%),
+    rgba(255,255,255,.95);
+}
+html[data-theme="light"] .lang-panel-list::-webkit-scrollbar-thumb{background:rgba(22,26,52,.14);}
+html[data-theme="light"] .lang-option:hover, html[data-theme="light"] .lang-option:focus-visible{background:rgba(22,26,52,.06);}
+html[data-theme="light"] .guide-overlay{background:rgba(26,30,58,.28);}
+html[data-theme="light"] .toast{background:rgba(255,244,244,.96); border-color:rgba(220,70,70,.35);}
+html[data-theme="light"] .filter-chip{background:rgba(22,26,52,.04);}
+html[data-theme="light"] .filter-chip:hover:not(.active){background:rgba(22,26,52,.08);}
+html[data-theme="light"] input[type=range]::-webkit-slider-runnable-track{background:rgba(22,26,52,.14);}
+html[data-theme="light"] input[type=range]::-moz-range-track{background:rgba(22,26,52,.14);}
+html[data-theme="light"] #editCanvas{box-shadow:0 30px 70px -34px rgba(34,40,90,.45);}
+html[data-theme="light"] .kbd-hint span{background:rgba(255,255,255,.78);}
 </style>
 </head>
 <body>
@@ -438,13 +505,30 @@ input[type=range]::-moz-range-thumb{
         <h2 data-i18n="dropTitle">Drop your reference</h2>
         <p class="sub" data-i18n="dropSub">Click to browse, drag a file here, or paste an image</p>
         <button class="btn-primary" id="btnBrowse" type="button" data-i18n="chooseImage">Choose Image</button>
-        <p class="hint" data-i18n="dropHint">PNG · JPG · WEBP · HEIC — up to 40MB</p>
+        <p class="hint" data-i18n="dropHint">PNG · JPG · WEBP · HEIC, up to 40MB</p>
       </div>
       <input type="file" id="fileInput" accept="image/*,.heic,.heif" hidden>
     </div>
 
     <div class="toast" id="toast"></div>
     <footer class="credit"><a class="credit-link" href="https://linktr.ee/aligokdam" target="_blank" rel="noopener">By Ali Gökdam</a></footer>
+
+    <!-- Bottom-left control: only on the main (upload) screen -->
+    <div class="footer-left">
+      <button class="icon-btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle light theme" aria-pressed="false">
+        <svg viewBox="0 0 32 32" fill="currentColor" stroke-linecap="round" aria-hidden="true">
+          <clipPath id="themeToggleClipPath">
+            <path id="themeToggleClip" d="M0-11h25a1 1 0 0017 13v30H0Z"/>
+          </clipPath>
+          <g clip-path="url(#themeToggleClipPath)">
+            <circle id="themeToggleCore" cx="16" cy="16" r="8"/>
+            <g id="themeToggleRays" stroke="currentColor" stroke-width="1.5">
+              <path d="M18.3 3.2c0 1.3-1 2.3-2.3 2.3s-2.3-1-2.3-2.3S14.7.9 16 .9s2.3 1 2.3 2.3zm-4.6 25.6c0-1.3 1-2.3 2.3-2.3s2.3 1 2.3 2.3-1 2.3-2.3 2.3-2.3-1-2.3-2.3zm15.1-10.5c-1.3 0-2.3-1-2.3-2.3s1-2.3 2.3-2.3 2.3 1 2.3 2.3-1 2.3-2.3 2.3zM3.2 13.7c1.3 0 2.3 1 2.3 2.3s-1 2.3-2.3 2.3S.9 17.3.9 16s1-2.3 2.3-2.3zm5.8-7C9 7.9 7.9 9 6.7 9S4.4 8 4.4 6.7s1-2.3 2.3-2.3S9 5.4 9 6.7zm16.3 21c-1.3 0-2.3-1-2.3-2.3s1-2.3 2.3-2.3 2.3 1 2.3 2.3-1 2.3-2.3 2.3zm2.4-21c0 1.3-1 2.3-2.3 2.3S23 7.9 23 6.7s1-2.3 2.3-2.3 2.4 1 2.4 2.3zM6.7 23C8 23 9 24 9 25.3s-1 2.3-2.3 2.3-2.3-1-2.3-2.3 1-2.3 2.3-2.3z"/>
+            </g>
+          </g>
+        </svg>
+      </button>
+    </div>
   </section>
 
   <!-- ============ USAGE GUIDE MODAL ============ -->
@@ -961,7 +1045,7 @@ class LanguageSelector {
     "dropTitle": "Drop your reference",
     "dropSub": "Click to browse, drag a file here, or paste an image",
     "chooseImage": "Choose Image",
-    "dropHint": "PNG · JPG · WEBP · HEIC — up to 40MB",
+    "dropHint": "PNG · JPG · WEBP · HEIC, up to 40MB",
     "adjustTitle": "ADJUST REFERENCE",
     "filterNormal": "Normal",
     "filterGrayscale": "Grayscale",
@@ -990,7 +1074,7 @@ class LanguageSelector {
     "guideTitle": "How Giotto Sketch Studio Works",
     "guideSteps": [
       "Upload a photo you want to use as a drawing reference.",
-      "Adjust it with filters and sliders — opacity, sharpness, edge strength and more.",
+      "Adjust it with filters and sliders: opacity, sharpness, edge strength and more.",
       "Tap “Open Camera” to switch to your live camera feed.",
       "The edited image appears as an overlay on top of the camera.",
       "Place your paper underneath, in view of the camera.",
@@ -1009,7 +1093,7 @@ class LanguageSelector {
     "dropTitle": "Referansını sürükle",
     "dropSub": "Göz atmak için tıkla, dosya sürükle ya da bir görsel yapıştır",
     "chooseImage": "Görsel Seç",
-    "dropHint": "PNG · JPG · WEBP · HEIC — 40MB'a kadar",
+    "dropHint": "PNG · JPG · WEBP · HEIC, 40MB'a kadar",
     "adjustTitle": "REFERANSI DÜZENLE",
     "filterNormal": "Normal",
     "filterGrayscale": "Gri Ton",
@@ -1038,7 +1122,7 @@ class LanguageSelector {
     "guideTitle": "Giotto Sketch Studio Nasıl Çalışır",
     "guideSteps": [
       "Çizim referansı olarak kullanmak istediğin bir fotoğraf yükle.",
-      "Filtreler ve kaydırıcılarla düzenle — saydamlık, keskinlik, kenar gücü ve daha fazlası.",
+      "Filtreler ve kaydırıcılarla düzenle: saydamlık, keskinlik, kenar gücü ve daha fazlası.",
       "Canlı kameraya geçmek için “Kamerayı Aç”a dokun.",
       "Düzenlediğin görsel, kameranın üzerine yerleşir.",
       "Kağıdını kameranın görüş alanına, altına yerleştir.",
@@ -1057,7 +1141,7 @@ class LanguageSelector {
     "dropTitle": "I-drop ang iyong reference",
     "dropSub": "I-click para mag-browse, i-drag ang file dito, o mag-paste ng larawan",
     "chooseImage": "Pumili ng Larawan",
-    "dropHint": "PNG · JPG · WEBP · HEIC — hanggang 40MB",
+    "dropHint": "PNG · JPG · WEBP · HEIC, hanggang 40MB",
     "adjustTitle": "I-ADJUST ANG REFERENCE",
     "filterNormal": "Normal",
     "filterGrayscale": "Grayscale",
@@ -1086,7 +1170,7 @@ class LanguageSelector {
     "guideTitle": "Paano Gumagana ang Giotto Sketch Studio",
     "guideSteps": [
       "Mag-upload ng larawan na gusto mong gamiting drawing reference.",
-      "I-adjust gamit ang mga filter at slider — opacity, sharpness, lakas ng gilid, at higit pa.",
+      "I-adjust gamit ang mga filter at slider: opacity, sharpness, lakas ng gilid, at higit pa.",
       "Pindutin ang “Buksan ang Camera” para lumipat sa live camera feed.",
       "Ang na-edit na larawan ay lalabas bilang overlay sa ibabaw ng camera.",
       "Ilagay ang iyong papel sa ibaba, nasa saklaw ng camera.",
@@ -1105,7 +1189,7 @@ class LanguageSelector {
     "dropTitle": "Déposez votre référence",
     "dropSub": "Cliquez pour parcourir, glissez un fichier ici, ou collez une image",
     "chooseImage": "Choisir une image",
-    "dropHint": "PNG · JPG · WEBP · HEIC — jusqu'à 40 Mo",
+    "dropHint": "PNG · JPG · WEBP · HEIC, jusqu'à 40 Mo",
     "adjustTitle": "AJUSTER LA RÉFÉRENCE",
     "filterNormal": "Normal",
     "filterGrayscale": "Niveaux de gris",
@@ -1134,7 +1218,7 @@ class LanguageSelector {
     "guideTitle": "Comment fonctionne Giotto Sketch Studio",
     "guideSteps": [
       "Téléchargez une photo que vous souhaitez utiliser comme référence de dessin.",
-      "Ajustez-la avec des filtres et curseurs — opacité, netteté, intensité des contours et plus.",
+      "Ajustez-la avec des filtres et curseurs : opacité, netteté, intensité des contours et plus.",
       "Appuyez sur « Ouvrir la caméra » pour passer à votre flux caméra en direct.",
       "L'image modifiée apparaît en superposition au-dessus de la caméra.",
       "Placez votre papier en dessous, dans le champ de la caméra.",
@@ -1153,7 +1237,7 @@ class LanguageSelector {
     "dropTitle": "Referenz hier ablegen",
     "dropSub": "Klicken zum Durchsuchen, Datei hierher ziehen, oder ein Bild einfügen",
     "chooseImage": "Bild auswählen",
-    "dropHint": "PNG · JPG · WEBP · HEIC — bis zu 40MB",
+    "dropHint": "PNG · JPG · WEBP · HEIC, bis zu 40MB",
     "adjustTitle": "REFERENZ ANPASSEN",
     "filterNormal": "Normal",
     "filterGrayscale": "Graustufen",
@@ -1182,7 +1266,7 @@ class LanguageSelector {
     "guideTitle": "So funktioniert Giotto Sketch Studio",
     "guideSteps": [
       "Laden Sie ein Foto hoch, das Sie als Zeichenvorlage verwenden möchten.",
-      "Passen Sie es mit Filtern und Reglern an — Deckkraft, Schärfe, Kantenstärke und mehr.",
+      "Passen Sie es mit Filtern und Reglern an: Deckkraft, Schärfe, Kantenstärke und mehr.",
       "Tippen Sie auf „Kamera öffnen“, um zu Ihrem Live-Kamerabild zu wechseln.",
       "Das bearbeitete Bild erscheint als Overlay über der Kamera.",
       "Legen Sie Ihr Papier darunter, im Sichtfeld der Kamera.",
@@ -1201,7 +1285,7 @@ class LanguageSelector {
     "dropTitle": "Sauke tunaninka",
     "dropSub": "Danna don bincika, ja fayil anan, ko liƙa hoto",
     "chooseImage": "Zaɓi Hoto",
-    "dropHint": "PNG · JPG · WEBP · HEIC — har zuwa 40MB",
+    "dropHint": "PNG · JPG · WEBP · HEIC, har zuwa 40MB",
     "adjustTitle": "DAIDAITA TUNANI",
     "filterNormal": "Na yau da kullum",
     "filterGrayscale": "Launin Toka",
@@ -1230,7 +1314,7 @@ class LanguageSelector {
     "guideTitle": "Yadda Giotto Sketch Studio Ke Aiki",
     "guideSteps": [
       "Loda hoto da kake son amfani da shi azaman tunanin zane.",
-      "Daidaita shi da tacewa da sila — bayyana, kaifi, karfin gefe da sauransu.",
+      "Daidaita shi da tacewa da sila: bayyana, kaifi, karfin gefe da sauransu.",
       "Danna “Buɗe Kamara” don canzawa zuwa rayayyen bidiyon kamararka.",
       "Hoton da aka gyara zai bayyana a saman kamara.",
       "Sanya takardarka a ƙasa, cikin kallon kamara.",
@@ -1249,7 +1333,7 @@ class LanguageSelector {
     "dropTitle": "Jatuhkan referensi Anda",
     "dropSub": "Klik untuk menelusuri, seret file ke sini, atau tempel gambar",
     "chooseImage": "Pilih Gambar",
-    "dropHint": "PNG · JPG · WEBP · HEIC — hingga 40MB",
+    "dropHint": "PNG · JPG · WEBP · HEIC, hingga 40MB",
     "adjustTitle": "SESUAIKAN REFERENSI",
     "filterNormal": "Normal",
     "filterGrayscale": "Skala Abu-abu",
@@ -1278,7 +1362,7 @@ class LanguageSelector {
     "guideTitle": "Cara Kerja Giotto Sketch Studio",
     "guideSteps": [
       "Unggah foto yang ingin Anda gunakan sebagai referensi gambar.",
-      "Sesuaikan dengan filter dan penggeser — opasitas, ketajaman, kekuatan tepi, dan lainnya.",
+      "Sesuaikan dengan filter dan penggeser: opasitas, ketajaman, kekuatan tepi, dan lainnya.",
       "Ketuk “Buka Kamera” untuk beralih ke umpan kamera langsung Anda.",
       "Gambar yang diedit muncul sebagai overlay di atas kamera.",
       "Letakkan kertas Anda di bawahnya, dalam jangkauan kamera.",
@@ -1297,7 +1381,7 @@ class LanguageSelector {
     "dropTitle": "Trascina il tuo riferimento",
     "dropSub": "Clicca per sfogliare, trascina un file qui, o incolla un'immagine",
     "chooseImage": "Scegli Immagine",
-    "dropHint": "PNG · JPG · WEBP · HEIC — fino a 40MB",
+    "dropHint": "PNG · JPG · WEBP · HEIC, fino a 40MB",
     "adjustTitle": "REGOLA RIFERIMENTO",
     "filterNormal": "Normale",
     "filterGrayscale": "Scala di grigi",
@@ -1326,7 +1410,7 @@ class LanguageSelector {
     "guideTitle": "Come Funziona Giotto Sketch Studio",
     "guideSteps": [
       "Carica una foto che vuoi usare come riferimento per il disegno.",
-      "Regolala con filtri e cursori — opacità, nitidezza, intensità dei bordi e altro.",
+      "Regolala con filtri e cursori: opacità, nitidezza, intensità dei bordi e altro.",
       "Tocca “Apri Fotocamera” per passare al flusso live della fotocamera.",
       "L'immagine modificata appare come sovrapposizione sopra la fotocamera.",
       "Posiziona il tuo foglio sotto, nell'inquadratura della fotocamera.",
@@ -1345,7 +1429,7 @@ class LanguageSelector {
     "dropTitle": "Solte sua referência",
     "dropSub": "Clique para procurar, arraste um arquivo aqui, ou cole uma imagem",
     "chooseImage": "Escolher Imagem",
-    "dropHint": "PNG · JPG · WEBP · HEIC — até 40MB",
+    "dropHint": "PNG · JPG · WEBP · HEIC, até 40MB",
     "adjustTitle": "AJUSTAR REFERÊNCIA",
     "filterNormal": "Normal",
     "filterGrayscale": "Escala de Cinza",
@@ -1374,7 +1458,7 @@ class LanguageSelector {
     "guideTitle": "Como Funciona o Giotto Sketch Studio",
     "guideSteps": [
       "Envie uma foto que você deseja usar como referência de desenho.",
-      "Ajuste com filtros e controles deslizantes — opacidade, nitidez, intensidade da borda e mais.",
+      "Ajuste com filtros e controles deslizantes: opacidade, nitidez, intensidade da borda e mais.",
       "Toque em “Abrir Câmera” para mudar para o feed da câmera ao vivo.",
       "A imagem editada aparece como uma sobreposição sobre a câmera.",
       "Coloque seu papel embaixo, no campo de visão da câmera.",
@@ -1393,7 +1477,7 @@ class LanguageSelector {
     "dropTitle": "Suelta tu referencia",
     "dropSub": "Haz clic para explorar, arrastra un archivo aquí, o pega una imagen",
     "chooseImage": "Elegir Imagen",
-    "dropHint": "PNG · JPG · WEBP · HEIC — hasta 40MB",
+    "dropHint": "PNG · JPG · WEBP · HEIC, hasta 40MB",
     "adjustTitle": "AJUSTAR REFERENCIA",
     "filterNormal": "Normal",
     "filterGrayscale": "Escala de Grises",
@@ -1422,7 +1506,7 @@ class LanguageSelector {
     "guideTitle": "Cómo Funciona Giotto Sketch Studio",
     "guideSteps": [
       "Sube una foto que quieras usar como referencia de dibujo.",
-      "Ajústala con filtros y controles deslizantes — opacidad, nitidez, intensidad de bordes y más.",
+      "Ajústala con filtros y controles deslizantes: opacidad, nitidez, intensidad de bordes y más.",
       "Toca “Abrir Cámara” para cambiar a la vista de tu cámara en vivo.",
       "La imagen editada aparece como una superposición sobre la cámara.",
       "Coloca tu papel debajo, dentro del campo de visión de la cámara.",
@@ -1441,7 +1525,7 @@ class LanguageSelector {
     "dropTitle": "Thả ảnh tham chiếu của bạn",
     "dropSub": "Nhấp để duyệt, kéo tệp vào đây, hoặc dán một hình ảnh",
     "chooseImage": "Chọn Hình Ảnh",
-    "dropHint": "PNG · JPG · WEBP · HEIC — tối đa 40MB",
+    "dropHint": "PNG · JPG · WEBP · HEIC, tối đa 40MB",
     "adjustTitle": "ĐIỀU CHỈNH THAM CHIẾU",
     "filterNormal": "Bình thường",
     "filterGrayscale": "Thang xám",
@@ -1470,7 +1554,7 @@ class LanguageSelector {
     "guideTitle": "Giotto Sketch Studio Hoạt Động Như Thế Nào",
     "guideSteps": [
       "Tải lên một bức ảnh bạn muốn dùng làm tham chiếu vẽ.",
-      "Điều chỉnh bằng bộ lọc và thanh trượt — độ mờ, độ sắc nét, cường độ cạnh và hơn thế nữa.",
+      "Điều chỉnh bằng bộ lọc và thanh trượt: độ mờ, độ sắc nét, cường độ cạnh và hơn thế nữa.",
       "Chạm “Mở Camera” để chuyển sang nguồn camera trực tiếp.",
       "Hình ảnh đã chỉnh sửa xuất hiện dưới dạng lớp phủ trên camera.",
       "Đặt giấy của bạn bên dưới, trong tầm nhìn của camera.",
@@ -1489,7 +1573,7 @@ class LanguageSelector {
     "dropTitle": "أسقط مرجعك",
     "dropSub": "انقر للتصفح، اسحب ملفًا هنا، أو الصق صورة",
     "chooseImage": "اختر صورة",
-    "dropHint": "PNG · JPG · WEBP · HEIC — حتى 40 ميغابايت",
+    "dropHint": "PNG · JPG · WEBP · HEIC، حتى 40 ميغابايت",
     "adjustTitle": "ضبط المرجع",
     "filterNormal": "عادي",
     "filterGrayscale": "تدرج رمادي",
@@ -1518,7 +1602,7 @@ class LanguageSelector {
     "guideTitle": "كيف يعمل Giotto Sketch Studio",
     "guideSteps": [
       "ارفع صورة تريد استخدامها كمرجع رسم.",
-      "اضبطها باستخدام المرشحات وأشرطة التمرير — الشفافية، الحدة، قوة الحواف والمزيد.",
+      "اضبطها باستخدام المرشحات وأشرطة التمرير: الشفافية، الحدة، قوة الحواف والمزيد.",
       "اضغط على “فتح الكاميرا” للانتقال إلى بث الكاميرا المباشر.",
       "تظهر الصورة المعدّلة كطبقة فوق الكاميرا.",
       "ضع ورقتك أسفلها، ضمن مجال رؤية الكاميرا.",
@@ -1537,7 +1621,7 @@ class LanguageSelector {
     "dropTitle": "مرجع خود را رها کنید",
     "dropSub": "برای مرور کلیک کنید، یک فایل را اینجا بکشید، یا یک تصویر پیست کنید",
     "chooseImage": "انتخاب تصویر",
-    "dropHint": "PNG · JPG · WEBP · HEIC — تا 40 مگابایت",
+    "dropHint": "PNG · JPG · WEBP · HEIC، تا 40 مگابایت",
     "adjustTitle": "تنظیم مرجع",
     "filterNormal": "عادی",
     "filterGrayscale": "خاکستری",
@@ -1566,7 +1650,7 @@ class LanguageSelector {
     "guideTitle": "Giotto Sketch Studio چگونه کار می‌کند",
     "guideSteps": [
       "عکسی را که می‌خواهید به عنوان مرجع طراحی استفاده کنید آپلود کنید.",
-      "آن را با فیلترها و لغزش‌ها تنظیم کنید — شفافیت، وضوح، قدرت لبه و بیشتر.",
+      "آن را با فیلترها و لغزش‌ها تنظیم کنید: شفافیت، وضوح، قدرت لبه و بیشتر.",
       "روی “باز کردن دوربین” ضربه بزنید تا به تصویر زنده دوربین بروید.",
       "تصویر ویرایش‌شده به صورت یک لایه روی دوربین ظاهر می‌شود.",
       "کاغذ خود را زیر آن، در دید دوربین قرار دهید.",
@@ -1585,7 +1669,7 @@ class LanguageSelector {
     "dropTitle": "اپنا ریفرنس ڈراپ کریں",
     "dropSub": "براؤز کرنے کے لیے کلک کریں، فائل یہاں گھسیٹیں، یا تصویر پیسٹ کریں",
     "chooseImage": "تصویر منتخب کریں",
-    "dropHint": "PNG · JPG · WEBP · HEIC — 40MB تک",
+    "dropHint": "PNG · JPG · WEBP · HEIC، 40MB تک",
     "adjustTitle": "ریفرنس ایڈجسٹ کریں",
     "filterNormal": "معمولی",
     "filterGrayscale": "گرے ٹون",
@@ -1614,7 +1698,7 @@ class LanguageSelector {
     "guideTitle": "Giotto Sketch Studio کیسے کام کرتا ہے",
     "guideSteps": [
       "ایک تصویر اپ لوڈ کریں جسے آپ ڈرائنگ ریفرنس کے طور پر استعمال کرنا चاہتے ہیں۔",
-      "فلٹرز اور سلائڈرز کے ساتھ اسے ایڈجسٹ کریں — شفافیت، تیزی، کنارے کی طاقت اور مزید۔",
+      "فلٹرز اور سلائڈرز کے ساتھ اسے ایڈجسٹ کریں: شفافیت، تیزی، کنارے کی طاقت اور مزید۔",
       "لائو کیمرہ فیڈ پر جانے کے لیے “کیمرہ کھولیں” پر تھپتھپائیں۔",
       "ترمیم شدہ تصویر کیمرہ کے اوپر ایک اوورلے کے طور پر ظاہر ہوتی ہے۔",
       "اپنا کاغذ نیچے رکھیں، کیمرہ کے منظر میں۔",
@@ -1633,7 +1717,7 @@ class LanguageSelector {
     "dropTitle": "Перетащите референс",
     "dropSub": "Нажмите, чтобы выбрать файл, перетащите файл сюда или вставьте изображение",
     "chooseImage": "Выбрать изображение",
-    "dropHint": "PNG · JPG · WEBP · HEIC — до 40МБ",
+    "dropHint": "PNG · JPG · WEBP · HEIC, до 40МБ",
     "adjustTitle": "НАСТРОЙКА РЕФЕРЕНСА",
     "filterNormal": "Обычный",
     "filterGrayscale": "Чёрно-белый",
@@ -1662,7 +1746,7 @@ class LanguageSelector {
     "guideTitle": "Как работает Giotto Sketch Studio",
     "guideSteps": [
       "Загрузите фото, которое вы хотите использовать как референс для рисования.",
-      "Настройте его с помощью фильтров и ползунков — непрозрачность, резкость, сила краёв и др.",
+      "Настройте его с помощью фильтров и ползунков: непрозрачность, резкость, сила краёв и др.",
       "Нажмите «Открыть камеру», чтобы перейти к трансляции с вашей камеры.",
       "Отредактированное изображение появится как наложение поверх камеры.",
       "Положите ваш лист бумаги внизу, в поле зрения камеры.",
@@ -1670,7 +1754,7 @@ class LanguageSelector {
       "Настройте непрозрачность, затем нажмите «Начать режим рисования» и обводите вручную."
     ],
     "errUnsupported": "Неподдерживаемый тип файла. Используйте PNG, JPG, WEBP или HEIC.",
-    "errTooLarge": "Файл слишком большой. Максимальный размер — 40МБ.",
+    "errTooLarge": "Файл слишком большой. Максимальный размер: 40МБ.",
     "errCantRead": "Не удалось прочитать это изображение. Если это HEIC, попробуйте сначала конвертировать в JPG.",
     "errCamera": "Доступ к камере запрещён или недоступен. Проверьте разрешения браузера/сайта.",
     "guidePrivacy": "Конфиденциальность: всё происходит на вашем устройстве. Ваше фото и видео с камеры никогда не отправляются на сервер.",
@@ -1681,7 +1765,7 @@ class LanguageSelector {
     "dropTitle": "拖放您的参考图",
     "dropSub": "点击浏览，将文件拖到此处，或粘贴图片",
     "chooseImage": "选择图片",
-    "dropHint": "PNG · JPG · WEBP · HEIC — 最大 40MB",
+    "dropHint": "PNG · JPG · WEBP · HEIC，最大 40MB",
     "adjustTitle": "调整参考图",
     "filterNormal": "正常",
     "filterGrayscale": "灰度",
@@ -1710,7 +1794,7 @@ class LanguageSelector {
     "guideTitle": "Giotto Sketch Studio 使用说明",
     "guideSteps": [
       "上传一张您想用作绘画参考的照片。",
-      "使用滤镜和滑块进行调整——不透明度、锐度、边缘强度等。",
+      "使用滤镜和滑块进行调整：不透明度、锐度、边缘强度等。",
       "点击“打开相机”切换到实时相机画面。",
       "编辑后的图像会以叠加层的形式出现在相机画面上方。",
       "把纸放在下方，置于相机取景范围内。",
@@ -1729,7 +1813,7 @@ class LanguageSelector {
     "dropTitle": "リファレンスをドロップ",
     "dropSub": "クリックして参照、ファイルをここにドラッグ、または画像を貼り付け",
     "chooseImage": "画像を選択",
-    "dropHint": "PNG・JPG・WEBP・HEIC — 最大40MB",
+    "dropHint": "PNG・JPG・WEBP・HEIC、最大40MB",
     "adjustTitle": "リファレンスを調整",
     "filterNormal": "標準",
     "filterGrayscale": "グレースケール",
@@ -1758,7 +1842,7 @@ class LanguageSelector {
     "guideTitle": "Giotto Sketch Studio の使い方",
     "guideSteps": [
       "描画のリファレンスとして使いたい写真をアップロードします。",
-      "フィルターとスライダーで調整します — 不透明度、シャープネス、エッジ強度など。",
+      "フィルターとスライダーで調整します：不透明度、シャープネス、エッジ強度など。",
       "「カメラを開く」をタップしてライブカメラ映像に切り替えます。",
       "編集した画像がカメラの上にオーバーレイとして表示されます。",
       "紙をカメラの視野内、下に置きます。",
@@ -1777,7 +1861,7 @@ class LanguageSelector {
     "dropTitle": "레퍼런스를 드롭하세요",
     "dropSub": "클릭하여 찾아보거나, 파일을 여기로 드래그하거나, 이미지를 붙여넣으세요",
     "chooseImage": "이미지 선택",
-    "dropHint": "PNG · JPG · WEBP · HEIC — 최대 40MB",
+    "dropHint": "PNG · JPG · WEBP · HEIC, 최대 40MB",
     "adjustTitle": "레퍼런스 조정",
     "filterNormal": "기본",
     "filterGrayscale": "흑백",
@@ -1806,7 +1890,7 @@ class LanguageSelector {
     "guideTitle": "Giotto Sketch Studio 사용 방법",
     "guideSteps": [
       "그림 레퍼런스로 사용할 사진을 업로드하세요.",
-      "필터와 슬라이더로 조정하세요 — 불투명도, 선명도, 윤곽선 강도 등.",
+      "필터와 슬라이더로 조정하세요: 불투명도, 선명도, 윤곽선 강도 등.",
       "“카메라 열기”를 눌러 실시간 카메라 화면으로 전환하세요.",
       "편집한 이미지가 카메라 위에 오버레이로 표시됩니다.",
       "종이를 카메라 시야 안, 아래쪽에 놓으세요.",
@@ -1825,7 +1909,7 @@ class LanguageSelector {
     "dropTitle": "अपना संदर्भ ड्रॉप करें",
     "dropSub": "ब्राउज़ करने के लिए क्लिक करें, यहाँ फ़ाइल खींचें, या एक छवि पेस्ट करें",
     "chooseImage": "छवि चुनें",
-    "dropHint": "PNG · JPG · WEBP · HEIC — 40MB तक",
+    "dropHint": "PNG · JPG · WEBP · HEIC, 40MB तक",
     "adjustTitle": "संदर्भ समायोजित करें",
     "filterNormal": "सामान्य",
     "filterGrayscale": "ग्रेस्केल",
@@ -1854,7 +1938,7 @@ class LanguageSelector {
     "guideTitle": "Giotto Sketch Studio कैसे काम करता है",
     "guideSteps": [
       "एक फ़ोटो अपलोड करें जिसे आप ड्रॉइंग संदर्भ के रूप में उपयोग करना चाहते हैं।",
-      "इसे फ़िल्टर और स्लाइडर के साथ समायोजित करें — अपारदर्शिता, तीक्ष्णता, किनारे की ताकत और अधिक।",
+      "इसे फ़िल्टर और स्लाइडर के साथ समायोजित करें: अपारदर्शिता, तीक्ष्णता, किनारे की ताकत और अधिक।",
       "लाइव कैमरा फ़ीड पर स्विच करने के लिए “कैमरा खोलें” टैप करें।",
       "संपादित छवि कैमरे के ऊपर एक ओवरले के रूप में दिखाई देती है।",
       "अपने कागज़ को नीचे, कैमरे के दृश्य में रखें।",
@@ -1873,7 +1957,7 @@ class LanguageSelector {
     "dropTitle": "तुमचा संदर्भ ड्रॉप करा",
     "dropSub": "ब्राउझ करण्यासाठी क्लिक करा, फाइल इथे ड्रॅग करा, किंवा प्रतिमा पेस्ट करा",
     "chooseImage": "प्रतिमा निवडा",
-    "dropHint": "PNG · JPG · WEBP · HEIC — 40MB पर्यंत",
+    "dropHint": "PNG · JPG · WEBP · HEIC, 40MB पर्यंत",
     "adjustTitle": "संदर्भ समायोजित करा",
     "filterNormal": "सामान्य",
     "filterGrayscale": "ग्रेस्केल",
@@ -1902,7 +1986,7 @@ class LanguageSelector {
     "guideTitle": "Giotto Sketch Studio कसे कार्य करते",
     "guideSteps": [
       "ड्रॉइंग संदर्भ म्हणून वापरायचा असलेला फोटो अपलोड करा.",
-      "फिल्टर आणि स्लायडर्ससह समायोजित करा — अपारदर्शकता, तीक्ष्णता, कडेची ताकद आणि बरेच काही.",
+      "फिल्टर आणि स्लायडर्ससह समायोजित करा: अपारदर्शकता, तीक्ष्णता, कडेची ताकद आणि बरेच काही.",
       "लाइव्ह कॅमेरा फीडवर स्विच करण्यासाठी “कॅमेरा उघडा” टॅप करा.",
       "संपादित प्रतिमा कॅमेराच्या वर एक ओव्हरले म्हणून दिसते.",
       "तुमचा कागद खाली, कॅमेराच्या दृश्यात ठेवा.",
@@ -1921,7 +2005,7 @@ class LanguageSelector {
     "dropTitle": "আপনার রেফারেন্স ড্রপ করুন",
     "dropSub": "ব্রাউজ করতে ক্লিক করুন, একটি ফাইল এখানে টেনে আনুন, বা একটি ছবি পেস্ট করুন",
     "chooseImage": "ছবি নির্বাচন করুন",
-    "dropHint": "PNG · JPG · WEBP · HEIC — সর্বোচ্চ 40MB",
+    "dropHint": "PNG · JPG · WEBP · HEIC, সর্বোচ্চ 40MB",
     "adjustTitle": "রেফারেন্স সামঞ্জস্য করুন",
     "filterNormal": "সাধারণ",
     "filterGrayscale": "গ্রেস্কেল",
@@ -1950,7 +2034,7 @@ class LanguageSelector {
     "guideTitle": "Giotto Sketch Studio কীভাবে কাজ করে",
     "guideSteps": [
       "একটি ছবি আপলোড করুন যা আপনি ড্রয়িং রেফারেন্স হিসেবে ব্যবহার করতে চান।",
-      "ফিল্টার এবং স্লাইডার দিয়ে এটি সামঞ্জস্য করুন — অস্বচ্ছতা, তীক্ষ্णতা, প্রান্তের শক্তি এবং আরও অনেক কিছু।",
+      "ফিল্টার এবং স্লাইডার দিয়ে এটি সামঞ্জস্য করুন: অস্বচ্ছতা, তীক্ষ্णতা, প্রান্তের শক্তি এবং আরও অনেক কিছু।",
       "লাইভ ক্যামেরা ফিডে যেতে “ক্যামেরা খুলুন” এ ট্যাপ করুন।",
       "সম্পাদিত ছবিটি ক্যামেরার উপরে একটি ওভারলে হিসেবে প্রদর্শিত হয়।",
       "আপনার কাগজ নিচে, ক্যামেরার দৃশ্যের মধ্যে রাখুন।",
@@ -1969,7 +2053,7 @@ class LanguageSelector {
     "dropTitle": "ਆਪਣਾ ਹਵਾਲਾ ਡ੍ਰੌਪ ਕਰੋ",
     "dropSub": "ਬ੍ਰਾਊਜ਼ ਕਰਨ ਲਈ ਕਲਿੱਕ ਕਰੋ, ਇੱਕ ਫਾਈਲ ਇੱਥੇ ਖਿੱਚੋ, ਜਾਂ ਇੱਕ ਚਿੱਤਰ ਪੇਸਟ ਕਰੋ",
     "chooseImage": "ਚਿੱਤਰ ਚੁਣੋ",
-    "dropHint": "PNG · JPG · WEBP · HEIC — 40MB ਤੱਕ",
+    "dropHint": "PNG · JPG · WEBP · HEIC, 40MB ਤੱਕ",
     "adjustTitle": "ਹਵਾਲਾ ਵਿਵਸਥਿਤ ਕਰੋ",
     "filterNormal": "ਸਧਾਰਨ",
     "filterGrayscale": "ਗ੍ਰੇਸਕੇਲ",
@@ -1998,7 +2082,7 @@ class LanguageSelector {
     "guideTitle": "Giotto Sketch Studio ਕਿਵੇਂ ਕੰਮ ਕਰਦਾ ਹੈ",
     "guideSteps": [
       "ਇੱਕ ਫੋਟੋ ਅੱਪਲੋਡ ਕਰੋ ਜਿਸਨੂੰ ਤੁਸੀਂ ਡ੍ਰਾਇੰਗ ਹਵਾਲੇ ਵਜੋਂ ਵਰਤਣਾ ਚਾਹੁੰਦੇ ਹੋ।",
-      "ਇਸਨੂੰ ਫਿਲਟਰਾਂ ਅਤੇ ਸਲਾਈਡਰਾਂ ਨਾਲ ਵਿਵਸਥਿਤ ਕਰੋ — ਧੁੰਦਲਾਪਨ, ਤਿੱਖਾਪਨ, ਕਿਨਾਰੇ ਦੀ ਤਾਕਤ ਅਤੇ ਹੋਰ।",
+      "ਇਸਨੂੰ ਫਿਲਟਰਾਂ ਅਤੇ ਸਲਾਈਡਰਾਂ ਨਾਲ ਵਿਵਸਥਿਤ ਕਰੋ: ਧੁੰਦਲਾਪਨ, ਤਿੱਖਾਪਨ, ਕਿਨਾਰੇ ਦੀ ਤਾਕਤ ਅਤੇ ਹੋਰ।",
       "ਲਾਈਵ ਕੈਮਰਾ ਫੀਡ ਵੱਲ ਜਾਣ ਲਈ “ਕੈਮਰਾ ਖੋਲ੍ਹੋ” ਨੂੰ ਟੈਪ ਕਰੋ।",
       "ਸੰਪਾਦਿਤ ਚਿੱਤਰ ਕੈਮਰੇ ਦੇ ਉੱਪਰ ਇੱਕ ਓਵਰਲੇ ਵਜੋਂ ਦਿਖਾਈ ਦਿੰਦਾ ਹੈ।",
       "ਆਪਣਾ ਕਾਗਜ਼ ਹੇਠਾਂ, ਕੈਮਰੇ ਦੇ ਦ੍ਰਿਸ਼ ਵਿੱਚ ਰੱਖੋ।",
@@ -2017,7 +2101,7 @@ class LanguageSelector {
     "dropTitle": "உங்கள் குறிப்பை இடவும்",
     "dropSub": "உலாவ கிளிக் செய்யவும், கோப்பை இங்கே இழுக்கவும், அல்லது படத்தை ஒட்டவும்",
     "chooseImage": "படத்தைத் தேர்ந்தெடுக்கவும்",
-    "dropHint": "PNG · JPG · WEBP · HEIC — அதிகபட்சம் 40MB",
+    "dropHint": "PNG · JPG · WEBP · HEIC, அதிகபட்சம் 40MB",
     "adjustTitle": "குறிப்பை சரிசெய்யவும்",
     "filterNormal": "இயல்பு",
     "filterGrayscale": "கிரேஸ்கேல்",
@@ -2046,7 +2130,7 @@ class LanguageSelector {
     "guideTitle": "Giotto Sketch Studio எப்படி வேலை செய்கிறது",
     "guideSteps": [
       "வரைதல் குறிப்பாகப் பயன்படுத்த விரும்பும் புகைப்படத்தைப் பதிவேற்றவும்.",
-      "வடிகட்டிகள் மற்றும் ஸ்லைடர்களுடன் அதைச் சரிசெய்யவும் — ஒளிபுகாநிலை, கூர்மை, விளிம்பு வலிமை மற்றும் பல.",
+      "வடிகட்டிகள் மற்றும் ஸ்லைடர்களுடன் அதைச் சரிசெய்யவும்: ஒளிபுகாநிலை, கூர்மை, விளிம்பு வலிமை மற்றும் பல.",
       "நேரடி கேமரா ஊட்டத்திற்கு மாற “கேமராவைத் திற” என்பதைத் தட்டவும்.",
       "திருத்தப்பட்ட படம் கேமராவின் மேல் ஒரு மேலடுக்காகத் தோன்றும்.",
       "உங்கள் காகிதத்தை கீழே, கேமராவின் பார்வையில் வைக்கவும்.",
@@ -2065,7 +2149,7 @@ class LanguageSelector {
     "dropTitle": "మీ రిఫరెన్స్‌ను వదలండి",
     "dropSub": "బ్రౌజ్ చేయడానికి క్లిక్ చేయండి, ఫైల్‌ను ఇక్కడకు లాగండి, లేదా చిత్రాన్ని పేస్ట్ చేయండి",
     "chooseImage": "చిత్రాన్ని ఎంచుకోండి",
-    "dropHint": "PNG · JPG · WEBP · HEIC — గరిష్టంగా 40MB",
+    "dropHint": "PNG · JPG · WEBP · HEIC, గరిష్టంగా 40MB",
     "adjustTitle": "రిఫరెన్స్‌ను సర్దుబాటు చేయండి",
     "filterNormal": "సాధారణ",
     "filterGrayscale": "గ్రేస్కేల్",
@@ -2094,7 +2178,7 @@ class LanguageSelector {
     "guideTitle": "Giotto Sketch Studio ఎలా పనిచేస్తుంది",
     "guideSteps": [
       "డ్రాయింగ్ రిఫరెన్స్‌గా ఉపయోగించాలనుకుంటున్న ఫోటోను అప్‌లోడ్ చేయండి.",
-      "ఫిల్టర్‌లు మరియు స్లయిడర్‌లతో దీన్ని సర్దుబాటు చేయండి — అస్పష్టత, పదునుదనం, అంచు బలం మరియు మరిన్ని.",
+      "ఫిల్టర్‌లు మరియు స్లయిడర్‌లతో దీన్ని సర్దుబాటు చేయండి: అస్పష్టత, పదునుదనం, అంచు బలం మరియు మరిన్ని.",
       "లైవ్ కెమెరా ఫీడ్‌కు మారడానికి “కెమెరాను తెరవండి” నొక్కండి.",
       "సవరించిన చిత్రం కెమెరా పైన ఓవర్‌లేగా కనిపిస్తుంది.",
       "మీ కాగితాన్ని కింద, కెమెరా వీక్షణలో ఉంచండి.",
@@ -2817,6 +2901,65 @@ class LanguageSelector {
   $("btnCloseGuide").addEventListener("click", ()=>guideOverlay.classList.remove("show"));
   guideOverlay.addEventListener("click", (e)=>{ if(e.target === guideOverlay) guideOverlay.classList.remove("show"); });
   guideOverlay.addEventListener("keydown", (e)=>{ if(e.key === "Escape") guideOverlay.classList.remove("show"); });
+
+  /* ============================= THEME TOGGLE ============================= */
+  // Vanilla port of ThemeToggleButton3: the clip path slides (x -11, y 14) to carve a
+  // crescent, the core grows (r 8 -> 10), the ray dots shrink + fade. 0.35s easeInOut.
+  // Progress 0 = main theme (sun), 1 = light theme (moon). Theme persists in localStorage.
+  const THEME_STORAGE_KEY = "giotto-theme";
+  const themeToggle = $("themeToggle");
+  const rootEl = document.documentElement;
+  const prefersReducedMotion = ()=> !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const isLightTheme = ()=> rootEl.getAttribute("data-theme") === "light";
+  let themeAnimTimer = 0;
+  const themeClip = $("themeToggleClip");
+  const themeCore = $("themeToggleCore");
+  const themeRays = $("themeToggleRays");
+  let themeProgress = isLightTheme() ? 1 : 0;
+  let themeAnimFrame = 0;
+
+  function renderThemeIcon(pr){
+    themeClip.setAttribute("transform", "translate(" + (-11*pr) + " " + (14*pr) + ")");
+    themeCore.setAttribute("r", String(8 + 2*pr));
+    themeRays.setAttribute("transform", "translate(16 16) scale(" + (1 - 0.5*pr) + ") translate(-16 -16)");
+    themeRays.setAttribute("opacity", String(1 - pr));
+  }
+  function easeInOut(k){ return k < 0.5 ? 2*k*k : 1 - Math.pow(-2*k + 2, 2)/2; }
+  function animateThemeIcon(target){
+    cancelAnimationFrame(themeAnimFrame);
+    if(prefersReducedMotion()){ themeProgress = target; renderThemeIcon(target); return; }
+    const from = themeProgress, start = performance.now(), dur = 350;
+    const step = (now)=>{
+      const k = Math.min(1, (now - start)/dur);
+      themeProgress = from + (target - from)*easeInOut(k);
+      renderThemeIcon(themeProgress);
+      if(k < 1) themeAnimFrame = requestAnimationFrame(step);
+    };
+    themeAnimFrame = requestAnimationFrame(step);
+  }
+
+  function setTheme(theme){
+    if(theme === "light") rootEl.setAttribute("data-theme", "light");
+    else rootEl.removeAttribute("data-theme");
+    themeToggle.setAttribute("aria-pressed", String(theme === "light"));
+    try{ localStorage.setItem(THEME_STORAGE_KEY, theme); }catch(e){}
+  }
+
+  themeToggle.addEventListener("click", ()=>{
+    const next = isLightTheme() ? "main" : "light";
+    animateThemeIcon(next === "light" ? 1 : 0);
+    if(prefersReducedMotion()){ setTheme(next); return; }
+    if(typeof document.startViewTransition === "function"){
+      document.startViewTransition(()=>setTheme(next));
+    } else {
+      rootEl.classList.add("theme-anim");
+      setTheme(next);
+      clearTimeout(themeAnimTimer);
+      themeAnimTimer = setTimeout(()=>rootEl.classList.remove("theme-anim"), 500);
+    }
+  });
+  renderThemeIcon(themeProgress);
+  themeToggle.setAttribute("aria-pressed", String(isLightTheme()));
 
   /* ============================= INIT ============================= */
   applyLiveCss();
