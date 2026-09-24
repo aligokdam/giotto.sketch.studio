@@ -108,19 +108,6 @@ http://localhost:8000
 
 ---
 
-## Technology
-
-- HTML5
-- CSS3
-- JavaScript
-- Canvas API
-- MediaDevices API
-- File API
-
-Everything runs entirely in the browser.
-
----
-
 ## Roadmap
 
 - Additional sketch filters
