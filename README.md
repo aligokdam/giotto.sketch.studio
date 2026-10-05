@@ -140,4 +140,9 @@ To deploy, push the folder to a GitHub repository and enable GitHub Pages — no
 
 ## License
 
-[MIT License](LICENSE)
+MIT License
+
+---
+
+Created by **Ali Gökdam**
+
